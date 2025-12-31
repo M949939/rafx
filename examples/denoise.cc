@@ -551,18 +551,18 @@ struct App {
     }
 
     void CreateShaders() {
-        shSDF = rfxCompileShaderMem(kSdfShaderSource, nullptr, 0);
+        shSDF = rfxCompileShaderMem(kSdfShaderSource, nullptr, 0, nullptr, 0);
         RfxComputePipelineDesc csDesc = {};
         csDesc.shader = shSDF;
         csDesc.entryPoint = "main";
         psoSDF = rfxCreateComputePipeline(&csDesc);
 
-        shTAA = rfxCompileShaderMem(kTaaShaderSource, nullptr, 0);
+        shTAA = rfxCompileShaderMem(kTaaShaderSource, nullptr, 0, nullptr, 0);
         csDesc.shader = shTAA;
         csDesc.entryPoint = "main";
         psoTAA = rfxCreateComputePipeline(&csDesc);
 
-        shBlit = rfxCompileShaderMem(kBlitShaderSource, nullptr, 0);
+        shBlit = rfxCompileShaderMem(kBlitShaderSource, nullptr, 0, nullptr, 0);
         RfxPipelineDesc gfxDesc = {};
         gfxDesc.shader = shBlit;
         gfxDesc.colorFormat = rfxGetSwapChainFormat();

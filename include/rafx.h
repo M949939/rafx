@@ -929,8 +929,10 @@ RAFX_API RfxSampler rfxCreateSampler(RfxFilter filter, RfxAddressMode addressMod
 RAFX_API void rfxDestroySampler(RfxSampler sampler);
 
 // Shaders
-RAFX_API RfxShader rfxCompileShader(const char* filepath, const char** defines, int numDefines);
-RAFX_API RfxShader rfxCompileShaderMem(const char* source, const char** defines, int numDefines);
+RAFX_API RfxShader
+rfxCompileShader(const char* filepath, const char** defines, int numDefines, const char** includeDirs, int numIncludeDirs);
+RAFX_API RfxShader
+rfxCompileShaderMem(const char* source, const char** defines, int numDefines, const char** includeDirs, int numIncludeDirs);
 RAFX_API void rfxDestroyShader(RfxShader shader);
 
 // Pipelines

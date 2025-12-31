@@ -140,9 +140,9 @@ int main(void) {
     RfxTexture hdrTarget = rfxCreateTextureEx(&hdrDesc);
 
     const char *defDown[] = { "PASS_DOWN", "1" }, *defUp[] = { "PASS_UP", "1" };
-    RfxShader sBase = rfxCompileShaderMem(bloomShaderSource, NULL, 0);
-    RfxShader sDown = rfxCompileShaderMem(bloomShaderSource, defDown, 2);
-    RfxShader sUp = rfxCompileShaderMem(bloomShaderSource, defUp, 2);
+    RfxShader sBase = rfxCompileShaderMem(bloomShaderSource, NULL, 0, NULL, 0);
+    RfxShader sDown = rfxCompileShaderMem(bloomShaderSource, defDown, 2, NULL, 0);
+    RfxShader sUp = rfxCompileShaderMem(bloomShaderSource, defUp, 2, NULL, 0);
 
     RfxPipelineDesc pSceneDesc = {};
     pSceneDesc.shader = sBase;

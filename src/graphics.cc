@@ -2135,8 +2135,10 @@ static void ParseConstSampler(slang::UserAttribute* attr, nri::SamplerDesc& desc
     desc.mipMax = 16.0f;
 }
 
-static RfxShader
-CompileShaderInternal(const char* path /* nullable */, const char* sourceCode /* nullable */, const char** defines, int numDefines) {
+static RfxShader CompileShaderInternal(
+    const char* path /* nullable */, const char* sourceCode /* nullable */, const char** defines, int numDefines, const char** includeDirs,
+    int numIncludeDirs
+) {
     RFX_ASSERT(numDefines % 2 == 0 && "rfxCompileShader: Number of defines must be even");
     RFX_ASSERT((sourceCode != nullptr || path != nullptr) && "rfxCompileShader: Source code or path must be provided");
 
@@ -2176,6 +2178,8 @@ CompileShaderInternal(const char* path /* nullable */, const char* sourceCode /*
         .targets = &targetDesc,
         .targetCount = 1,
         .defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR,
+        .searchPaths = includeDirs,
+        .searchPathCount = numIncludeDirs,
         .preprocessorMacros = prepMacros.data(),
         .preprocessorMacroCount = (uint32_t)prepMacros.size(),
         .fileSystem = &s_FileSystem,
@@ -2398,12 +2402,13 @@ CompileShaderInternal(const char* path /* nullable */, const char* sourceCode /*
     return (RfxShader)impl;
 }
 
-RfxShader rfxCompileShader(const char* filepath, const char** defines, int numDefines) {
-    return CompileShaderInternal(filepath, nullptr, defines, numDefines);
+RfxShader rfxCompileShader(const char* filepath, const char** defines, int numDefines, const char** includeDirs, int numIncludeDirs) {
+    return CompileShaderInternal(filepath, nullptr, defines, numDefines, includeDirs, numIncludeDirs);
 }
-RfxShader rfxCompileShaderMem(const char* source, const char** defines, int numDefines) {
-    return CompileShaderInternal(nullptr, source, defines, numDefines);
+RfxShader rfxCompileShaderMem(const char* source, const char** defines, int numDefines, const char** includeDirs, int numIncludeDirs) {
+    return CompileShaderInternal(nullptr, source, defines, numDefines, includeDirs, numIncludeDirs);
 }
+
 void rfxDestroyShader(RfxShader shader) {
     if (!shader)
         return;

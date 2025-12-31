@@ -73,7 +73,7 @@ int main(void) {
 
     RfxBuffer vertexBuffer = rfxCreateBuffer(sizeof(vertices), 0, RFX_USAGE_VERTEX_BUFFER, RFX_MEM_GPU_ONLY, vertices);
 
-    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0);
+    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0, NULL, 0);
     RfxVertexLayoutElement layout[] = {
         { 0, RFX_FORMAT_RGB32_FLOAT, offsetof(Vertex, x), "POSITION" },
         { 1, RFX_FORMAT_RGBA32_FLOAT, offsetof(Vertex, r), "COLOR" },

@@ -69,7 +69,7 @@ int main() {
 
     RfxCommandList computeCmd = rfxCreateCommandList(RFX_QUEUE_COMPUTE);
 
-    RfxShader shader = rfxCompileShaderMem(shaderSource, nullptr, 0);
+    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0, NULL, 0);
 
     RfxComputePipelineDesc cpd = {};
     cpd.shader = shader;

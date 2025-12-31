@@ -15,7 +15,7 @@ int main() {
 
     struct Vertex data[] = { { 0, .5, 0, 1, 0, 0, 1 }, { .5, -.5, 0, 0, 1, 0, 1 }, { -.5, -.5, 0, 0, 0, 1, 1 } };
     RfxBuffer vb = rfxCreateBuffer(sizeof(data), sizeof(data[0]), RFX_USAGE_VERTEX_BUFFER, RFX_MEM_GPU_ONLY, data);
-    RfxShader s = rfxCompileShaderMem(src, NULL, 0);
+    RfxShader s = rfxCompileShaderMem(src, NULL, 0, NULL, 0);
 
     RfxVertexLayoutElement layout[] = { { 0, RFX_FORMAT_RGB32_FLOAT, 0, "POSITION" }, { 1, RFX_FORMAT_RGBA32_FLOAT, 12, "COLOR" } };
     RfxPipeline pip = rfxCreatePipeline(&(RfxPipelineDesc){

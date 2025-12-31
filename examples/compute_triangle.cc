@@ -73,7 +73,7 @@ int main(void) {
     if (!rfxOpenWindow("Rafx Compute Triangle", 1280, 720))
         return 1;
 
-    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0);
+    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0, NULL, 0);
     if (!shader)
         return 1;
 

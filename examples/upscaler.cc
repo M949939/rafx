@@ -287,7 +287,7 @@ struct App {
         vBuffer = rfxCreateBuffer(sizeof(kCubeVertices), sizeof(Vertex), RFX_USAGE_VERTEX_BUFFER, RFX_MEM_GPU_ONLY, kCubeVertices);
         iBuffer = rfxCreateBuffer(sizeof(kCubeIndices), sizeof(uint16_t), RFX_USAGE_INDEX_BUFFER, RFX_MEM_GPU_ONLY, kCubeIndices);
 
-        shScene = rfxCompileShaderMem(kSceneShader, nullptr, 0);
+        shScene = rfxCompileShaderMem(kSceneShader, nullptr, 0, NULL, 0);
 
         RfxVertexLayoutElement layout[] = {
             { 0, RFX_FORMAT_RGB32_FLOAT, offsetof(Vertex, x), "POSITION" },
@@ -313,7 +313,7 @@ struct App {
         psoScene = rfxCreatePipeline(&pd);
 
         // present pipeline
-        shPresent = rfxCompileShaderMem(kFullscreenTriShader, nullptr, 0);
+        shPresent = rfxCompileShaderMem(kFullscreenTriShader, NULL, 0, NULL, 0);
         RfxPipelineDesc blitPd = {};
         blitPd.shader = shPresent;
         blitPd.colorFormat = rfxGetSwapChainFormat();

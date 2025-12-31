@@ -208,7 +208,7 @@ int main(void) {
     free(texData);
 
     // pipeline
-    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0);
+    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0, NULL, 0);
 
     RfxVertexLayoutElement layout[] = {
         { 0, RFX_FORMAT_RGB32_FLOAT, offsetof(Vertex, pos), "POSITION" },

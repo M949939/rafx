@@ -160,7 +160,7 @@ int main(void) {
     }
 
     // pipeline and SBT
-    RfxShader shader = rfxCompileShaderMem(shaderSource, nullptr, 0);
+    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0, NULL, 0);
 
     // rt pipeline
     RfxShaderGroup groups[3] = {};

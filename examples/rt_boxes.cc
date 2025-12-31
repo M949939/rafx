@@ -372,7 +372,7 @@ int main(void) {
         rfxEndFrame();
     }
 
-    RfxShader shader = rfxCompileShaderMem(shaderSource, nullptr, 0);
+    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0, NULL, 0);
 
     // RT pipeline
     RfxShaderGroup groups[3] = {};

@@ -47,7 +47,7 @@ int main(void) {
     if (!rfxOpenWindow("Rafx Mesh Shader Triangle", 1280, 720))
         return 1;
 
-    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0);
+    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0, NULL, 0);
     if (!shader)
         return 1;
 

@@ -134,7 +134,7 @@ int main() {
 
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    io.IniFilename = nullptr;
+    io.IniFilename = NULL;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
     ImGui::StyleColorsDark();
@@ -168,7 +168,7 @@ int main() {
         RFX_MEM_GPU_ONLY, initialSeeds.data()
     );
 
-    RfxShader shader = rfxCompileShaderMem(shaderSource, nullptr, 0);
+    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0, NULL, 0);
 
     RfxComputePipelineDesc computeDesc = { .shader = shader, .entryPoint = "computeMain" };
     RfxPipeline computePipeline = rfxCreateComputePipeline(&computeDesc);
@@ -179,7 +179,7 @@ int main() {
     graphicsDesc.psEntryPoint = "fragmentMain";
     graphicsDesc.topology = RFX_TOPOLOGY_TRIANGLE_LIST;
     graphicsDesc.colorFormat = rfxGetSwapChainFormat();
-    graphicsDesc.vertexLayout = nullptr;
+    graphicsDesc.vertexLayout = NULL;
     graphicsDesc.vertexLayoutCount = 0;
     graphicsDesc.depthFormat = RFX_FORMAT_D32_FLOAT;
 

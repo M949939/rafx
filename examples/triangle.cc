@@ -54,7 +54,7 @@ int main(void) {
 
     RfxBuffer vertexBuffer = rfxCreateBuffer(sizeof(vertices), 0, RFX_USAGE_VERTEX_BUFFER, RFX_MEM_GPU_ONLY, vertices);
 
-    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0);
+    RfxShader shader = rfxCompileShaderMem(shaderSource, NULL, 0, NULL, 0);
     if (!shader)
         return 1;
 
