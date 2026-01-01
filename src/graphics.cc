@@ -1609,7 +1609,7 @@ RfxBuffer rfxCreateBuffer(size_t size, size_t stride, RfxBufferUsageFlags usage,
 
     nri::BufferDesc bd = {};
     bd.size = size;
-    bd.structureStride = (stride > 0) ? (uint32_t)stride : 4;
+    bd.structureStride = 4; // allows "typed", "byte address (raw)" and "structured" views
     bd.usage = nri::BufferUsageBits::SHADER_RESOURCE;
 
     if (usage & RFX_USAGE_VERTEX_BUFFER)
@@ -1653,7 +1653,7 @@ RfxBuffer rfxCreateBuffer(size_t size, size_t stride, RfxBufferUsageFlags usage,
         uavDesc.viewType = nri::BufferViewType::SHADER_RESOURCE_STORAGE;
         uavDesc.format = nri::Format::UNKNOWN;
         uavDesc.size = size;
-        uavDesc.structureStride = (stride > 0) ? (uint32_t)stride : 4;
+        uavDesc.structureStride = 0;
         NRI_CHECK(CORE.NRI.CreateBufferView(uavDesc, impl->descriptorUAV));
 
         nri::UpdateDescriptorRangeDesc uavUpdate = {};
@@ -1670,7 +1670,7 @@ RfxBuffer rfxCreateBuffer(size_t size, size_t stride, RfxBufferUsageFlags usage,
     vd.viewType = nri::BufferViewType::SHADER_RESOURCE;
     vd.format = nri::Format::UNKNOWN;
     vd.size = size;
-    vd.structureStride = (stride > 0) ? (uint32_t)stride : 4;
+    vd.structureStride = 0;
     NRI_CHECK(CORE.NRI.CreateBufferView(vd, impl->descriptorSRV));
 
     nri::UpdateDescriptorRangeDesc update = {};

@@ -159,51 +159,32 @@ static void InitBindless() {
 
     bool isD3D12 = CORE.NRI.GetDeviceDesc(*CORE.NRIDevice).graphicsAPI == nri::GraphicsAPI::D3D12;
 
-    nri::DescriptorRangeDesc ranges[6] = {};
     nri::DescriptorRangeBits bindlessFlags =
         nri::DescriptorRangeBits::PARTIALLY_BOUND | nri::DescriptorRangeBits::ARRAY | nri::DescriptorRangeBits::ALLOW_UPDATE_AFTER_SET;
 
+    nri::DescriptorRangeDesc ranges[6];
+
     // 0 = textures srv
-    ranges[0].baseRegisterIndex = 0;
-    ranges[0].descriptorNum = RFX_MAX_BINDLESS_TEXTURES;
-    ranges[0].descriptorType = nri::DescriptorType::TEXTURE;
-    ranges[0].shaderStages = nri::StageBits::ALL;
-    ranges[0].flags = bindlessFlags;
+    ranges[0] = { 0, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::TEXTURE, nri::StageBits::ALL, bindlessFlags };
 
     // 1 = samplers
-    ranges[1].baseRegisterIndex = isD3D12 ? 0 : 1;
-    ranges[1].descriptorNum = 4;
-    ranges[1].descriptorType = nri::DescriptorType::SAMPLER;
-    ranges[1].shaderStages = nri::StageBits::ALL;
-    ranges[1].flags = bindlessFlags;
+    ranges[1] = { isD3D12 ? 0u : 1u, 4, nri::DescriptorType::SAMPLER, nri::StageBits::ALL, bindlessFlags };
 
     // 2 = buffers srv
-    ranges[2].baseRegisterIndex = isD3D12 ? RFX_MAX_BINDLESS_TEXTURES : 2;
-    ranges[2].descriptorNum = RFX_MAX_BINDLESS_TEXTURES;
-    ranges[2].descriptorType = nri::DescriptorType::STRUCTURED_BUFFER;
-    ranges[2].shaderStages = nri::StageBits::ALL;
-    ranges[2].flags = bindlessFlags;
+    ranges[2] = { isD3D12 ? RFX_MAX_BINDLESS_TEXTURES : 2u, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::STRUCTURED_BUFFER,
+                  nri::StageBits::ALL, bindlessFlags };
 
     // 3 = RW buffers
-    ranges[3].baseRegisterIndex = isD3D12 ? 0 : 3;
-    ranges[3].descriptorNum = RFX_MAX_BINDLESS_TEXTURES;
-    ranges[3].descriptorType = nri::DescriptorType::STORAGE_STRUCTURED_BUFFER;
-    ranges[3].shaderStages = nri::StageBits::ALL;
-    ranges[3].flags = bindlessFlags;
+    ranges[3] = { isD3D12 ? 0u : 3u, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::STORAGE_STRUCTURED_BUFFER, nri::StageBits::ALL,
+                  bindlessFlags };
 
     // 4 = RW textures uav
-    ranges[4].baseRegisterIndex = isD3D12 ? RFX_MAX_BINDLESS_TEXTURES : 4;
-    ranges[4].descriptorNum = RFX_MAX_BINDLESS_TEXTURES;
-    ranges[4].descriptorType = nri::DescriptorType::STORAGE_TEXTURE;
-    ranges[4].shaderStages = nri::StageBits::ALL;
-    ranges[4].flags = bindlessFlags;
+    ranges[4] = { isD3D12 ? RFX_MAX_BINDLESS_TEXTURES : 4u, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::STORAGE_TEXTURE,
+                  nri::StageBits::ALL, bindlessFlags };
 
     // 5 = acceleration structures srv
-    ranges[5].baseRegisterIndex = isD3D12 ? (RFX_MAX_BINDLESS_TEXTURES * 2) : 5;
-    ranges[5].descriptorNum = 2048;
-    ranges[5].descriptorType = nri::DescriptorType::ACCELERATION_STRUCTURE;
-    ranges[5].shaderStages = nri::StageBits::ALL;
-    ranges[5].flags = bindlessFlags;
+    ranges[5] = { isD3D12 ? (RFX_MAX_BINDLESS_TEXTURES * 2) : 5u, 2048, nri::DescriptorType::ACCELERATION_STRUCTURE, nri::StageBits::ALL,
+                  bindlessFlags };
 
     nri::DescriptorSetDesc setDesc = {};
     setDesc.registerSpace = 1;

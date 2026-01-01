@@ -2,7 +2,7 @@
 if not exist "build/" (
     mkdir build
     cd build
-    cmake .. -GNinja -DCMAKE_BUILD_TYPE=Debug -DRAFX_BUILD_EXAMPLES=ON
+    cmake .. -GNinja -DCMAKE_BUILD_TYPE=Debug -DRAFX_BUILD_EXAMPLES=ON -DRAFX_D3D12_SUPPORT=ON
     cd ..
 )
 
