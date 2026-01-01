@@ -2252,26 +2252,60 @@ static RfxShader CompileShaderInternal(
 
         slang::ParameterCategory category = par->getCategory();
 
-        if (category == slang::ParameterCategory::PushConstantBuffer || category == slang::ParameterCategory::ConstantBuffer) {
+        if (category == slang::ParameterCategory::PushConstantBuffer) {
+            uint32_t size = (uint32_t)typeLayout->getElementTypeLayout()->getSize();
 
-            nri::RootConstantDesc rc = {};
-            rc.registerIndex = par->getBindingIndex();
-            rc.size = (uint32_t)typeLayout->getElementTypeLayout()->getSize();
-            rc.shaderStages = actualShaderStages;
+            bool found = false;
+            for (auto& existing : rootConstants) {
+                if (existing.registerIndex == 0) {
+                    existing.size = std::max(existing.size, size);
+                    existing.shaderStages |= actualShaderStages;
+                    found = true;
+                    break;
+                }
+            }
 
-            if (rc.registerIndex == 0) {
+            if (!found) {
+                nri::RootConstantDesc rc = {};
+                rc.registerIndex = 0;
+                rc.size = size;
+                rc.shaderStages = actualShaderStages;
                 rootConstants.push_back(rc);
+            }
+        } else if (category == slang::ParameterCategory::ConstantBuffer) {
+            // handle UBOs
+            uint32_t binding = par->getBindingIndex();
+            if (binding == 0) {
+                uint32_t size = (uint32_t)typeLayout->getElementTypeLayout()->getSize();
+                bool found = false;
+                for (auto& existing : rootConstants) {
+                    if (existing.registerIndex == 0) {
+                        existing.size = std::max(existing.size, size);
+                        existing.shaderStages |= actualShaderStages;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    nri::RootConstantDesc rc = {};
+                    rc.registerIndex = 0;
+                    rc.size = size;
+                    rc.shaderStages = actualShaderStages;
+                    rootConstants.push_back(rc);
+                }
             } else {
+                // descriptor table UBO
                 nri::DescriptorRangeDesc range = {};
-                range.baseRegisterIndex = rc.registerIndex;
+                range.baseRegisterIndex = binding;
                 range.descriptorNum = 1;
                 range.descriptorType = nri::DescriptorType::CONSTANT_BUFFER;
                 range.shaderStages = actualShaderStages;
                 uint32_t space = par->getBindingSpace();
                 setBuilders[space].push_back(range);
-                impl->bindings.push_back({ space, (uint32_t)setBuilders[space].size() - 1, rc.registerIndex, 1, range.descriptorType });
+                impl->bindings.push_back({ space, (uint32_t)setBuilders[space].size() - 1, binding, 1, range.descriptorType });
             }
         } else if (category == slang::ParameterCategory::DescriptorTableSlot) {
+            // handle descriptors (texture, buffer, sampler)
             uint32_t binding = par->getBindingIndex();
             uint32_t space = par->getBindingSpace();
             if (space == 1)
@@ -2523,6 +2557,9 @@ RfxPipeline rfxCreatePipeline(const RfxPipelineDesc* desc) {
         gpd.outputMerger.multiview = nri::Multiview::FLEXIBLE;
     }
 
+    bool explicitVertex = (desc->vsEntryPoint != nullptr);
+
+    // filter entrypoints
     std::vector<nri::ShaderDesc> sds;
     for (auto& s : impl->shader->stages) {
         if (s.stageBits & nri::StageBits::VERTEX_SHADER) {
@@ -2530,6 +2567,8 @@ RfxPipeline rfxCreatePipeline(const RfxPipelineDesc* desc) {
                 continue;
             sds.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
         } else if (s.stageBits & nri::StageBits::FRAGMENT_SHADER) {
+            if (explicitVertex && desc->psEntryPoint == nullptr)
+                continue;
             if (desc->psEntryPoint && s.sourceEntryPoint != desc->psEntryPoint)
                 continue;
             sds.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
@@ -2537,13 +2576,18 @@ RfxPipeline rfxCreatePipeline(const RfxPipelineDesc* desc) {
             sds.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
         }
     }
+
     gpd.shaders = sds.data();
     gpd.shaderNum = (uint32_t)sds.size();
 
     nri::VertexInputDesc vid = {};
     nri::VertexStreamDesc vs = { 0, nri::VertexStreamStepRate::PER_VERTEX };
     std::vector<nri::VertexAttributeDesc> vads;
-    if (desc->vertexLayout && (impl->shader->stageMask & nri::StageBits::VERTEX_SHADER)) {
+
+    // check if we actually found a vertex shader before trying to setup input layout
+    bool hasVertexStage = (impl->shader->stageMask & nri::StageBits::VERTEX_SHADER);
+
+    if (desc->vertexLayout && hasVertexStage) {
         for (int i = 0; i < desc->vertexLayoutCount; ++i) {
             const auto& el = desc->vertexLayout[i];
             nri::VertexAttributeDesc ad = {};
