@@ -197,8 +197,6 @@ class OdinGenerator:
                         vname = "None"
                     if vname[0].isdigit():
                         vname = "V" + vname
-                    if vname in ["None", "In", "Out"]:
-                        vname += "_"
 
                     if v.value in seen:
                         self.emit(f"// {vname} = {v.value}, // Duplicate", 1)

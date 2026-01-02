@@ -181,7 +181,7 @@ QueryType :: enum u32 {
 }
 
 CullMode :: enum u32 {
-	None_ = 0,
+	None = 0,
 	Back = 1,
 	Front = 2,
 }
@@ -346,7 +346,7 @@ Backend :: enum u32 {
 	Vulkan = 1,
 	D3D12 = 2,
 	D3D11 = 3,
-	None_ = 4,
+	None = 4,
 }
 
 QueueType :: enum u32 {
