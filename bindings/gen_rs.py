@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 from gen_ast import *
 
@@ -47,16 +47,13 @@ class RustGenerator:
             if td.target_type.is_pointer and td.target_type.name not in self.primitives:
                 self.handle_types.add(td.name)
 
-        # map names
         used_safe_names: Dict[str, str] = {}
 
-        # handles
         for h_name in sorted(self.handle_types):
             safe = self.strip_rfx(h_name)
             self.name_map[h_name] = safe
             used_safe_names[safe] = "handle"
 
-        # structs
         for s_name in sorted(self.module.structs_map.keys()):
             if s_name in self.name_map:
                 continue
@@ -66,7 +63,6 @@ class RustGenerator:
             self.name_map[s_name] = safe
             used_safe_names[safe] = "struct"
 
-        # enums
         for enum in self.module.enums:
             if enum.is_anonymous or not enum.name:
                 continue
@@ -80,7 +76,6 @@ class RustGenerator:
             self.name_map[enum.name] = safe
             used_safe_names[safe] = "enum"
 
-        # typedefs
         for td in self.module.typedefs:
             if td.name in self.name_map:
                 continue
@@ -142,6 +137,25 @@ class RustGenerator:
 
         return base
 
+    def get_rust_repr(self, underlying: str) -> str:
+        u = underlying.lower()
+        if "unsigned" in u or "u8" in u or "u16" in u or "u32" in u or "u64" in u:
+            if "char" in u or "8" in u:
+                return "u8"
+            if "short" in u or "16" in u:
+                return "u16"
+            if "long long" in u or "64" in u:
+                return "u64"
+            return "u32"
+        else:
+            if "char" in u or "8" in u:
+                return "i8"
+            if "short" in u or "16" in u:
+                return "i16"
+            if "long long" in u or "64" in u:
+                return "i64"
+            return "i32"
+
     def emit(self, line="", indent=0):
         self.output.append("    " * indent + line)
 
@@ -151,12 +165,12 @@ class RustGenerator:
         self.emit("", 1)
 
         for enum in self.module.enums:
-            underlying = "u32" if "unsigned" in enum.underlying_type else "i32"
+            repr_type = self.get_rust_repr(enum.underlying_type)
             if not enum.is_anonymous:
-                self.emit(f"pub type {enum.name} = {underlying};", 1)
+                self.emit(f"pub type {enum.name} = {repr_type};", 1)
             for val in enum.values:
                 self.emit(
-                    f"pub const {val.name}: {enum.name if not enum.is_anonymous else underlying} = {val.value};",
+                    f"pub const {val.name}: {enum.name if not enum.is_anonymous else repr_type} = {val.value};",
                     1,
                 )
 
@@ -213,7 +227,6 @@ class RustGenerator:
     def generate_safe_typedefs(self):
         self.emit("//\n// Typedefs\n//")
         for raw, safe in self.name_map.items():
-            # only emit aliases for basic typedefs that aren't enums/structs/handles
             is_def = (
                 raw in self.handle_types
                 or raw in self.module.structs_map
@@ -230,6 +243,7 @@ class RustGenerator:
                 continue
             name = self.name_map[enum.name]
             prefix = self.get_common_prefix(enum.values)
+            repr_type = self.get_rust_repr(enum.underlying_type)
 
             if "Flags" in name:
                 self.emit("bitflags::bitflags! {")
@@ -237,7 +251,7 @@ class RustGenerator:
                     "    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]",
                     1,
                 )
-                self.emit(f"    pub struct {name}: u32 {{", 0)
+                self.emit(f"    pub struct {name}: {repr_type} {{", 0)
                 for val in enum.values:
                     vname = (
                         val.name[len(prefix) :]
@@ -250,6 +264,7 @@ class RustGenerator:
                 self.emit("    }", 0)
                 self.emit("}")
             else:
+                self.emit(f"#[repr({repr_type})]")
                 self.emit("#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]")
                 self.emit(f"pub enum {name} {{")
                 seen = set()
@@ -267,7 +282,7 @@ class RustGenerator:
                         vname += "_"
                     if not vname or vname[0].isdigit():
                         vname = "V" + vname
-                    self.emit(f"{vname} = sys::{val.name} as isize,", 1)
+                    self.emit(f"{vname} = sys::{val.name} as {repr_type},", 1)
                 self.emit("}")
             self.emit()
 
@@ -367,7 +382,6 @@ class RustGenerator:
                 params.append(f"{pname}: &str")
                 call_args.append(f"std::ffi::CString::new({pname}).unwrap().as_ptr()")
             elif t.is_pointer:
-                # Pointer cast needed for binary compatibility between Safe wrapper and sys type
                 safe_base = self.name_map.get(t.name, t.name)
                 sys_base = f"sys::{t.name}" if t.name not in self.primitives else t.name
                 params.append(f"{pname}: *mut {safe_base}")
@@ -378,7 +392,24 @@ class RustGenerator:
                 if t.name in self.handle_types:
                     call_args.append(f"{pname}.0")
                 else:
-                    call_args.append(f"unsafe {{ std::mem::transmute({pname}) }}")
+                    is_enum = False
+                    enum_underlying = "i32"
+                    is_flags = False
+
+                    for e in self.module.enums:
+                        if self.name_map.get(e.name) == safe_type:
+                            is_enum = True
+                            enum_underlying = self.get_rust_repr(e.underlying_type)
+                            is_flags = "Flags" in safe_type
+                            break
+
+                    if is_enum:
+                        if is_flags:
+                            call_args.append(f"{pname}.bits()")
+                        else:
+                            call_args.append(f"{pname} as {enum_underlying}")
+                    else:
+                        call_args.append(f"unsafe {{ std::mem::transmute({pname}) }}")
             else:
                 params.append(f"{pname}: {self.to_rust_type(t, False)}")
                 call_args.append(pname)

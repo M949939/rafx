@@ -20,6 +20,7 @@ class TypeInfo:
 class EnumValue:
     name: str
     value: int
+    comment: Optional[str] = None
 
 
 @dataclass
@@ -28,12 +29,16 @@ class Enum:
     underlying_type: str
     values: List[EnumValue] = field(default_factory=list)
     is_anonymous: bool = False
+    is_bitflags: bool = False
+    comment: Optional[str] = None
+    ast_id: Optional[int] = None
 
 
 @dataclass
 class Field:
     name: str
     type_info: TypeInfo
+    comment: Optional[str] = None
 
 
 @dataclass
@@ -42,6 +47,7 @@ class Struct:
     fields: List[Field] = field(default_factory=list)
     is_union: bool = False
     is_opaque: bool = False
+    comment: Optional[str] = None
 
 
 @dataclass
@@ -49,17 +55,20 @@ class Function:
     name: str
     ret_type: TypeInfo
     params: List[Field] = field(default_factory=list)
+    comment: Optional[str] = None
 
 
 @dataclass
 class Typedef:
     name: str
     target_type: TypeInfo
+    comment: Optional[str] = None
 
 
 class ApiModule:
     def __init__(self):
         self.enums: List[Enum] = []
+        self.enum_map: Dict[int, Enum] = {}
         self.structs_map: Dict[str, Struct] = {}
         self.functions: List[Function] = []
         self.typedefs: List[Typedef] = []
@@ -72,10 +81,10 @@ class ApiModule:
         else:
             self.structs_map[s.name] = s
 
-
-#
-# ast parser
-#
+    def add_enum(self, e: Enum):
+        self.enums.append(e)
+        if e.ast_id:
+            self.enum_map[e.ast_id] = e
 
 
 class ClangAstParser:
@@ -85,7 +94,6 @@ class ClangAstParser:
         self.module = ApiModule()
         self.processed_ids = set()
         self.node_index = {}
-
         self.type_map = {
             "unsigned int": "u32",
             "uint32_t": "u32",
@@ -114,36 +122,12 @@ class ClangAstParser:
             "uintptr_t": "usize",
             "ptrdiff_t": "isize",
         }
-
         self.ignore_names = {
             "va_list",
             "__builtin_va_list",
             "__va_list_tag",
             "wchar_t",
             "max_align_t",
-            "__int128_t",
-            "__uint128_t",
-            "int_least8_t",
-            "int_least16_t",
-            "int_least32_t",
-            "int_least64_t",
-            "uint_least8_t",
-            "uint_least16_t",
-            "uint_least32_t",
-            "uint_least64_t",
-            "int_fast8_t",
-            "int_fast16_t",
-            "int_fast32_t",
-            "int_fast64_t",
-            "uint_fast8_t",
-            "uint_fast16_t",
-            "uint_fast32_t",
-            "uint_fast64_t",
-            "intmax_t",
-            "uintmax_t",
-            "__vcrt_bool",
-            "__security_cookie",
-            "_StackCookie",
             "__va_start",
             "__security_init_cookie",
             "__security_check_cookie",
@@ -156,6 +140,7 @@ class ClangAstParser:
             "-Xclang",
             "-ast-dump=json",
             "-fsyntax-only",
+            "-fparse-all-comments",
             "-Wno-everything",
             self.header_file,
         ]
@@ -186,19 +171,45 @@ class ClangAstParser:
             return False
         if "file" not in loc:
             return True
-        node_file = loc["file"].replace("\\", "/").lower()
-        return node_file.endswith(self.header_filename)
+        return loc["file"].replace("\\", "/").lower().endswith(self.header_filename)
+
+    def extract_comment_text(self, node) -> str:
+        text = ""
+        if node["kind"] == "TextComment":
+            text += node.get("text", "")
+        elif "inner" in node:
+            for child in node["inner"]:
+                text += self.extract_comment_text(child)
+        return text
+
+    def clean_comment(self, raw_comment: Optional[str]) -> Optional[str]:
+        if not raw_comment:
+            return None
+        lines = raw_comment.splitlines()
+        cleaned = []
+        for line in lines:
+            line = line.strip()
+            if line.startswith("*"):
+                line = line[1:].strip()
+            cleaned.append(line)
+        return "\n".join(cleaned).strip()
 
     def evaluate_expr(self, node) -> int:
         kind = node.get("kind")
         if kind == "IntegerLiteral":
             return int(node.get("value", 0))
 
-        if "inner" in node and len(node["inner"]) > 0:
-            if kind == "BinaryOperator" and len(node["inner"]) >= 2:
+        inner = [
+            n
+            for n in node.get("inner", [])
+            if n.get("kind") != "FullComment" and n.get("kind") != "TextComment"
+        ]
+
+        if len(inner) > 0:
+            if kind == "BinaryOperator" and len(inner) >= 2:
                 op = node.get("opcode")
-                l = self.evaluate_expr(node["inner"][0])
-                r = self.evaluate_expr(node["inner"][1])
+                l = self.evaluate_expr(inner[0])
+                r = self.evaluate_expr(inner[1])
                 try:
                     if op == "<<":
                         return l << r
@@ -218,15 +229,13 @@ class ClangAstParser:
                         return int(l / r)
                 except:
                     pass
-            return self.evaluate_expr(node["inner"][0])
+            return self.evaluate_expr(inner[0])
         return 0
 
     def parse_type(self, qual_type: str) -> TypeInfo:
         t = qual_type
         dims = re.findall(r"\[(\d+)\]", t)
-        array_size = None
-        array_size_2d = None
-
+        array_size, array_size_2d = None, None
         if len(dims) > 0:
             if len(dims) == 1:
                 array_size = int(dims[0])
@@ -234,16 +243,13 @@ class ClangAstParser:
                 array_size_2d = int(dims[0])
                 array_size = int(dims[1])
             t = re.sub(r"\[\d+\]", "", t).strip()
-
         is_const = "const " in t
         t = t.replace("const ", "").strip()
         is_pointer = "*" in t
         t = t.replace("*", "").strip()
         t = t.replace("struct ", "").replace("union ", "").replace("enum ", "").strip()
-
         if t in self.type_map:
             t = self.type_map[t]
-
         return TypeInfo(
             name=t,
             is_pointer=is_pointer,
@@ -254,158 +260,205 @@ class ClangAstParser:
 
     def parse_fields(self, record_node, parent_name="") -> List[Field]:
         fields = []
-        inner_nodes = record_node.get("inner", [])
-
-        for child in inner_nodes:
+        inner = record_node.get("inner", [])
+        comment = None
+        for child in inner:
             kind = child["kind"]
+            if kind == "FullComment":
+                comment = self.clean_comment(self.extract_comment_text(child))
+                continue
             if kind == "RecordDecl" and not child.get("name"):
-                nested_name = f"{parent_name}_Data" if parent_name else "AnonymousInner"
-                self.visit_record(child, forced_name=nested_name)
-                fields.append(Field("data", TypeInfo(nested_name)))
+                nested = f"{parent_name}_Data" if parent_name else "AnonymousInner"
+                self.visit_record(child, forced_name=nested, comment=comment)
+                fields.append(Field("data", TypeInfo(nested), comment=comment))
+                comment = None
             elif kind == "FieldDecl":
                 fname = child.get("name")
-                if not fname:
-                    continue
-                ftype = self.parse_type(child["type"]["qualType"])
-                fields.append(Field(fname, ftype))
+                if fname:
+                    fields.append(
+                        Field(
+                            fname,
+                            self.parse_type(child["type"]["qualType"]),
+                            comment=comment,
+                        )
+                    )
+                comment = None
         return fields
 
-    def visit_record(self, node, forced_name=None):
-        node_id = node.get("id")
-        if node_id in self.processed_ids:
+    def visit_record(self, node, forced_name=None, comment=None):
+        if node.get("id") in self.processed_ids:
             return
         name = forced_name if forced_name else node.get("name", "")
         if not name:
             return
-
-        self.processed_ids.add(node_id)
-        kind = node.get("tagUsed", "struct")
-        is_union = kind == "union"
-
-        has_fields = False
-        if "inner" in node:
-            for c in node["inner"]:
-                if c["kind"] in ("FieldDecl", "RecordDecl"):
-                    has_fields = True
-                    break
-
+        self.processed_ids.add(node.get("id"))
+        is_union = node.get("tagUsed") == "union"
+        has_fields = any(
+            c["kind"] in ("FieldDecl", "RecordDecl") for c in node.get("inner", [])
+        )
         is_complete = node.get("completeDefinition", False) or has_fields
-
         if not is_complete:
-            self.module.add_struct(Struct(name, [], is_union, is_opaque=True))
+            self.module.add_struct(
+                Struct(name, [], is_union, is_opaque=True, comment=comment)
+            )
         else:
-            fields = self.parse_fields(node, parent_name=name)
-            self.module.add_struct(Struct(name, fields, is_union, is_opaque=False))
+            self.module.add_struct(
+                Struct(
+                    name,
+                    self.parse_fields(node, parent_name=name),
+                    is_union,
+                    is_opaque=False,
+                    comment=comment,
+                )
+            )
 
-    def visit_typedef(self, node):
+    def resolve_underlying_decl(self, node):
+        if "ownedTagDecl" in node:
+            decl = node["ownedTagDecl"]
+            if "id" in decl and "inner" not in decl and decl["id"] in self.node_index:
+                return self.node_index[decl["id"]]
+            return decl
+
+        # search in inner for ElaboratedType with ownedTagDecl
+        if "inner" in node:
+            for child in node["inner"]:
+                if child["kind"] in ("RecordDecl", "EnumDecl"):
+                    return child
+                if child["kind"] == "ElaboratedType" and "ownedTagDecl" in child:
+                    decl = child["ownedTagDecl"]
+                    if (
+                        "id" in decl
+                        and "inner" not in decl
+                        and decl["id"] in self.node_index
+                    ):
+                        return self.node_index[decl["id"]]
+                    return decl
+        return None
+
+    def visit_typedef(self, node, comment=None, last_typedef_tracker=None):
         name = node.get("name")
         if not name or name in self.ignore_names:
             return
 
-        # Helper to drill down into the typedef
-        def resolve_underlying(n):
-            if "ownedTagDecl" in n:
-                candidate = n["ownedTagDecl"]
-                if (
-                    "id" in candidate
-                    and "inner" not in candidate
-                    and candidate["id"] in self.node_index
-                ):
-                    candidate = self.node_index[candidate["id"]]
-                return candidate
-            if "inner" in n:
-                for c in n["inner"]:
-                    if c["kind"] == "ElaboratedType":
-                        res = resolve_underlying(c)
-                        if res:
-                            return res
-                    if c["kind"] in ("RecordDecl", "EnumDecl"):
-                        if (
-                            "id" in c
-                            and "inner" not in c
-                            and c["id"] in self.node_index
-                        ):
-                            return self.node_index[c["id"]]
-                        return c
-            return None
-
-        underlying = resolve_underlying(node)
+        underlying = self.resolve_underlying_decl(node)
 
         if underlying:
             if underlying["kind"] == "RecordDecl":
-                # typedef struct { } Name;
-                self.visit_record(underlying, forced_name=name)
+                self.visit_record(underlying, forced_name=name, comment=comment)
+                if last_typedef_tracker is not None:
+                    last_typedef_tracker[0] = None
                 return
             elif underlying["kind"] == "EnumDecl":
-                # typedef enum { } Name;
-                self.module.typedefs.append(Typedef(name, TypeInfo("u32")))
+                self.visit_enum(underlying, inferred_name=name, comment=comment)
+                if last_typedef_tracker is not None:
+                    last_typedef_tracker[0] = None
                 return
 
-        # Normal typedef
-        qual_type = node["type"]["qualType"]
-        target = self.parse_type(qual_type)
+        target = self.parse_type(node["type"]["qualType"])
 
-        if name in self.type_map:
-            return
-        if target.name == name and not target.is_pointer:
-            return
+        if name not in self.type_map and (target.name != name or target.is_pointer):
+            self.module.typedefs.append(Typedef(name, target, comment=comment))
 
-        self.module.typedefs.append(Typedef(name, target))
+        # ugly hack to track RFX_ENUM
+        if last_typedef_tracker is not None:
+            if not target.is_pointer and target.name in [
+                "u8",
+                "u16",
+                "u32",
+                "u64",
+                "i8",
+                "i16",
+                "i32",
+                "i64",
+            ]:
+                last_typedef_tracker[0] = name
+            else:
+                last_typedef_tracker[0] = None
 
-    def visit_enum(self, node):
+    def visit_enum(self, node, comment=None, inferred_name=None, inferred_type=None):
         name = node.get("name", "")
-        is_anon = not name
-        fixed_underlying = node.get("fixedUnderlyingType", {}).get("qualType", "u32")
-        if fixed_underlying in self.type_map:
-            fixed_underlying = self.type_map[fixed_underlying]
+        if not name and inferred_name:
+            name = inferred_name
+
+        fixed = node.get("fixedUnderlyingType", {}).get("qualType", "u32")
+        if "fixedUnderlyingType" not in node and inferred_type:
+            fixed = inferred_type
+        if fixed in self.type_map:
+            fixed = self.type_map[fixed]
 
         values = []
         next_val = 0
+        val_comment = None
+
         for child in node.get("inner", []):
+            if child["kind"] == "FullComment":
+                val_comment = self.clean_comment(self.extract_comment_text(child))
+                continue
             if child["kind"] == "EnumConstantDecl":
-                val_name = child["name"]
                 val = next_val
-                if "inner" in child:
+                expr_nodes = [
+                    n for n in child.get("inner", []) if n.get("kind") != "FullComment"
+                ]
+                if expr_nodes:
                     val = self.evaluate_expr(child)
-                values.append(EnumValue(val_name, val))
+
+                values.append(EnumValue(child["name"], val, comment=val_comment))
                 next_val = val + 1
+                val_comment = None
 
-        self.module.enums.append(Enum(name, fixed_underlying, values, is_anon))
+        is_bitflags = False
+        if name and ("Flags" in name or "Bits" in name):
+            is_bitflags = True
 
-    def visit_function(self, node):
+        self.module.add_enum(
+            Enum(name, fixed, values, not name, is_bitflags, comment, node.get("id"))
+        )
+
+    def visit_function(self, node, comment=None):
         name = node.get("name")
         if not name or name in self.ignore_names or "operator" in name:
             return
-
-        raw_type = node["type"]["qualType"]
-        ret_str = raw_type.split("(")[0].strip()
-        ret_type = self.parse_type(ret_str)
-
+        ret = self.parse_type(node["type"]["qualType"].split("(")[0].strip())
         params = []
-        for child in node.get("inner", []):
-            if child["kind"] == "ParmVarDecl":
-                pname = child.get("name", "arg")
-                ptype = self.parse_type(child["type"]["qualType"])
-                params.append(Field(pname, ptype))
-
-        self.module.functions.append(Function(name, ret_type, params))
+        for c in node.get("inner", []):
+            if c["kind"] == "ParmVarDecl":
+                params.append(
+                    Field(c.get("name", "arg"), self.parse_type(c["type"]["qualType"]))
+                )
+        self.module.functions.append(Function(name, ret, params, comment=comment))
 
     def parse(self):
         data = self.run_clang()
         root = data["inner"]
         self.index_nodes(data)
 
+        comment = None
+        last_typedef = [None]
+
         for node in root:
             if not self.is_valid_loc(node):
+                comment, last_typedef[0] = None, None
                 continue
-            kind = node["kind"]
-            if kind == "RecordDecl":
-                self.visit_record(node)
-            elif kind == "TypedefDecl":
-                self.visit_typedef(node)
-            elif kind == "EnumDecl":
-                self.visit_enum(node)
-            elif kind == "FunctionDecl":
-                self.visit_function(node)
 
+            kind = node["kind"]
+            if kind == "FullComment":
+                comment = self.clean_comment(self.extract_comment_text(node))
+                continue
+
+            if kind == "RecordDecl":
+                self.visit_record(node, comment=comment)
+                last_typedef[0] = None
+            elif kind == "TypedefDecl":
+                self.visit_typedef(
+                    node, comment=comment, last_typedef_tracker=last_typedef
+                )
+            elif kind == "EnumDecl":
+                self.visit_enum(node, comment=comment, inferred_name=last_typedef[0])
+                last_typedef[0] = None
+            elif kind == "FunctionDecl":
+                self.visit_function(node, comment=comment)
+                last_typedef[0] = None
+
+            if kind not in ["DLLImportAttr", "DLLExportAttr", "VisibilityAttr"]:
+                comment = None
         return self.module

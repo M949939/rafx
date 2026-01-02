@@ -7,388 +7,738 @@ pub mod sys {
     use std::ffi::c_void;
     use std::os::raw::c_char;
 
-    pub const RFX_FILTER_NEAREST: i32 = 0;
-    pub const RFX_FILTER_LINEAR: i32 = 1;
-    pub const RFX_WRAP_REPEAT: i32 = 0;
-    pub const RFX_WRAP_CLAMP: i32 = 1;
-    pub const RFX_WRAP_MIRROR: i32 = 2;
-    pub const RFX_TOPOLOGY_TRIANGLE_LIST: i32 = 0;
-    pub const RFX_TOPOLOGY_TRIANGLE_STRIP: i32 = 1;
-    pub const RFX_TOPOLOGY_POINT_LIST: i32 = 2;
-    pub const RFX_TOPOLOGY_LINE_LIST: i32 = 3;
-    pub const RFX_TOPOLOGY_LINE_STRIP: i32 = 4;
-    pub const RFX_TOPOLOGY_LINE_LIST_WITH_ADJACENCY: i32 = 5;
-    pub const RFX_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY: i32 = 6;
-    pub const RFX_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY: i32 = 7;
-    pub const RFX_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY: i32 = 8;
-    pub const RFX_TOPOLOGY_PATCH_LIST: i32 = 9;
-    pub const RFX_USAGE_SHADER_RESOURCE: i32 = 1;
-    pub const RFX_USAGE_SHADER_RESOURCE_STORAGE: i32 = 2;
-    pub const RFX_USAGE_VERTEX_BUFFER: i32 = 4;
-    pub const RFX_USAGE_INDEX_BUFFER: i32 = 8;
-    pub const RFX_USAGE_CONSTANT_BUFFER: i32 = 16;
-    pub const RFX_USAGE_ARGUMENT_BUFFER: i32 = 32;
-    pub const RFX_USAGE_SCRATCH_BUFFER: i32 = 64;
-    pub const RFX_USAGE_SHADER_BINDING_TABLE: i32 = 128;
-    pub const RFX_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT: i32 = 256;
-    pub const RFX_USAGE_MICROMAP_BUILD_INPUT: i32 = 512;
-    pub const RFX_USAGE_TRANSFER_SRC: i32 = 1024;
-    pub const RFX_USAGE_TRANSFER_DST: i32 = 2048;
-    pub const RFX_STATE_UNDEFINED: i32 = 0;
-    pub const RFX_STATE_PRESENT: i32 = 1;
-    pub const RFX_STATE_COPY_SRC: i32 = 2;
-    pub const RFX_STATE_COPY_DST: i32 = 3;
-    pub const RFX_STATE_VERTEX_BUFFER: i32 = 4;
-    pub const RFX_STATE_INDEX_BUFFER: i32 = 5;
-    pub const RFX_STATE_INDIRECT_ARGUMENT: i32 = 6;
-    pub const RFX_STATE_SHADER_READ: i32 = 7;
-    pub const RFX_STATE_SHADER_WRITE: i32 = 8;
-    pub const RFX_STATE_RENDER_TARGET: i32 = 9;
-    pub const RFX_STATE_DEPTH_READ: i32 = 10;
-    pub const RFX_STATE_DEPTH_WRITE: i32 = 11;
-    pub const RFX_STATE_SCRATCH_BUFFER: i32 = 12;
-    pub const RFX_STATE_RESOLVE_SRC: i32 = 13;
-    pub const RFX_STATE_RESOLVE_DST: i32 = 14;
-    pub const RFX_MEM_GPU_ONLY: i32 = 0;
-    pub const RFX_MEM_CPU_TO_GPU: i32 = 1;
-    pub const RFX_MEM_GPU_TO_CPU: i32 = 2;
-    pub const RFX_FORMAT_UNKNOWN: i32 = 0;
-    pub const RFX_FORMAT_RGBA8_UNORM: i32 = 1;
-    pub const RFX_FORMAT_RGBA8_SRGB: i32 = 2;
-    pub const RFX_FORMAT_BGRA8_UNORM: i32 = 3;
-    pub const RFX_FORMAT_BGRA8_SRGB: i32 = 4;
-    pub const RFX_FORMAT_R8_UINT: i32 = 5;
-    pub const RFX_FORMAT_R8_SINT: i32 = 6;
-    pub const RFX_FORMAT_RG8_UINT: i32 = 7;
-    pub const RFX_FORMAT_RG8_SINT: i32 = 8;
-    pub const RFX_FORMAT_RGBA8_UINT: i32 = 9;
-    pub const RFX_FORMAT_RGBA8_SINT: i32 = 10;
-    pub const RFX_FORMAT_R16_UINT: i32 = 11;
-    pub const RFX_FORMAT_R16_SINT: i32 = 12;
-    pub const RFX_FORMAT_R16_UNORM: i32 = 13;
-    pub const RFX_FORMAT_R16_SNORM: i32 = 14;
-    pub const RFX_FORMAT_RG16_UINT: i32 = 15;
-    pub const RFX_FORMAT_RG16_SINT: i32 = 16;
-    pub const RFX_FORMAT_RG16_UNORM: i32 = 17;
-    pub const RFX_FORMAT_RG16_SNORM: i32 = 18;
-    pub const RFX_FORMAT_RGBA16_UINT: i32 = 19;
-    pub const RFX_FORMAT_RGBA16_SINT: i32 = 20;
-    pub const RFX_FORMAT_RGBA16_UNORM: i32 = 21;
-    pub const RFX_FORMAT_RGBA16_SNORM: i32 = 22;
-    pub const RFX_FORMAT_R32_UINT: i32 = 23;
-    pub const RFX_FORMAT_R32_SINT: i32 = 24;
-    pub const RFX_FORMAT_RG32_UINT: i32 = 25;
-    pub const RFX_FORMAT_RG32_SINT: i32 = 26;
-    pub const RFX_FORMAT_RGB32_UINT: i32 = 27;
-    pub const RFX_FORMAT_RGB32_SINT: i32 = 28;
-    pub const RFX_FORMAT_RGBA32_UINT: i32 = 29;
-    pub const RFX_FORMAT_RGBA32_SINT: i32 = 30;
-    pub const RFX_FORMAT_R10_G10_B10_A2_UNORM: i32 = 31;
-    pub const RFX_FORMAT_R10_G10_B10_A2_UINT: i32 = 32;
-    pub const RFX_FORMAT_R11_G11_B10_UFLOAT: i32 = 33;
-    pub const RFX_FORMAT_R9_G9_B9_E5_UFLOAT: i32 = 34;
-    pub const RFX_FORMAT_BC1_RGBA_UNORM: i32 = 35;
-    pub const RFX_FORMAT_BC1_RGBA_SRGB: i32 = 36;
-    pub const RFX_FORMAT_BC2_RGBA_UNORM: i32 = 37;
-    pub const RFX_FORMAT_BC2_RGBA_SRGB: i32 = 38;
-    pub const RFX_FORMAT_BC3_RGBA_UNORM: i32 = 39;
-    pub const RFX_FORMAT_BC3_RGBA_SRGB: i32 = 40;
-    pub const RFX_FORMAT_BC4_R_UNORM: i32 = 41;
-    pub const RFX_FORMAT_BC4_R_SNORM: i32 = 42;
-    pub const RFX_FORMAT_BC5_RG_UNORM: i32 = 43;
-    pub const RFX_FORMAT_BC5_RG_SNORM: i32 = 44;
-    pub const RFX_FORMAT_BC6H_RGB_UFLOAT: i32 = 45;
-    pub const RFX_FORMAT_BC6H_RGB_SFLOAT: i32 = 46;
-    pub const RFX_FORMAT_BC7_RGBA_UNORM: i32 = 47;
-    pub const RFX_FORMAT_BC7_RGBA_SRGB: i32 = 48;
-    pub const RFX_FORMAT_D16_UNORM: i32 = 49;
-    pub const RFX_FORMAT_D24_UNORM_S8_UINT: i32 = 50;
-    pub const RFX_FORMAT_D32_FLOAT: i32 = 51;
-    pub const RFX_FORMAT_D32_FLOAT_S8_UINT_X24: i32 = 52;
-    pub const RFX_FORMAT_R32_FLOAT: i32 = 53;
-    pub const RFX_FORMAT_RG32_FLOAT: i32 = 54;
-    pub const RFX_FORMAT_RGB32_FLOAT: i32 = 55;
-    pub const RFX_FORMAT_RGBA32_FLOAT: i32 = 56;
-    pub const RFX_FORMAT_RGBA16_FLOAT: i32 = 57;
-    pub const RFX_BLEND_FACTOR_ZERO: i32 = 0;
-    pub const RFX_BLEND_FACTOR_ONE: i32 = 1;
-    pub const RFX_BLEND_FACTOR_SRC_COLOR: i32 = 2;
-    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC_COLOR: i32 = 3;
-    pub const RFX_BLEND_FACTOR_DST_COLOR: i32 = 4;
-    pub const RFX_BLEND_FACTOR_ONE_MINUS_DST_COLOR: i32 = 5;
-    pub const RFX_BLEND_FACTOR_SRC_ALPHA: i32 = 6;
-    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA: i32 = 7;
-    pub const RFX_BLEND_FACTOR_DST_ALPHA: i32 = 8;
-    pub const RFX_BLEND_FACTOR_ONE_MINUS_DST_ALPHA: i32 = 9;
-    pub const RFX_BLEND_FACTOR_CONSTANT_COLOR: i32 = 10;
-    pub const RFX_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR: i32 = 11;
-    pub const RFX_BLEND_FACTOR_CONSTANT_ALPHA: i32 = 12;
-    pub const RFX_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA: i32 = 13;
-    pub const RFX_BLEND_FACTOR_SRC_ALPHA_SATURATE: i32 = 14;
-    pub const RFX_BLEND_FACTOR_SRC1_COLOR: i32 = 15;
-    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR: i32 = 16;
-    pub const RFX_BLEND_FACTOR_SRC1_ALPHA: i32 = 17;
-    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA: i32 = 18;
-    pub const RFX_BLEND_OP_ADD: i32 = 0;
-    pub const RFX_BLEND_OP_SUBTRACT: i32 = 1;
-    pub const RFX_BLEND_OP_REVERSE_SUBTRACT: i32 = 2;
-    pub const RFX_BLEND_OP_MIN: i32 = 3;
-    pub const RFX_BLEND_OP_MAX: i32 = 4;
-    pub const RFX_COLOR_WRITE_RED: i32 = 1;
-    pub const RFX_COLOR_WRITE_GREEN: i32 = 2;
-    pub const RFX_COLOR_WRITE_BLUE: i32 = 4;
-    pub const RFX_COLOR_WRITE_ALPHA: i32 = 8;
-    pub const RFX_COLOR_WRITE_ALL: i32 = 15;
-    pub const RFX_QUERY_TYPE_TIMESTAMP: i32 = 0;
-    pub const RFX_QUERY_TYPE_OCCLUSION: i32 = 1;
-    pub const RFX_CULL_NONE: i32 = 0;
-    pub const RFX_CULL_BACK: i32 = 1;
-    pub const RFX_CULL_FRONT: i32 = 2;
-    pub const RFX_DENOISER_REBLUR_DIFFUSE: i32 = 0;
-    pub const RFX_DENOISER_REBLUR_DIFFUSE_SPECULAR: i32 = 1;
-    pub const RFX_DENOISER_RELAX_DIFFUSE: i32 = 2;
-    pub const RFX_DENOISER_RELAX_DIFFUSE_SPECULAR: i32 = 3;
-    pub const RFX_DENOISER_SIGMA_SHADOW: i32 = 4;
-    pub const RFX_DENOISER_IN_VIEWZ: i32 = 0;
-    pub const RFX_DENOISER_IN_MV: i32 = 1;
-    pub const RFX_DENOISER_IN_NORMAL_ROUGHNESS: i32 = 2;
-    pub const RFX_DENOISER_IN_DIFF_RADIANCE: i32 = 3;
-    pub const RFX_DENOISER_IN_SPEC_RADIANCE: i32 = 4;
-    pub const RFX_DENOISER_IN_SHADOW_DATA: i32 = 5;
-    pub const RFX_DENOISER_OUT_DIFF_RADIANCE: i32 = 6;
-    pub const RFX_DENOISER_OUT_SPEC_RADIANCE: i32 = 7;
-    pub const RFX_DENOISER_OUT_SHADOW: i32 = 8;
-    pub const RFX_DENOISER_OUT_VALIDATION: i32 = 9;
-    pub const RFX_DENOISER_RESOURCE_COUNT: i32 = 10;
-    pub const RFX_STENCIL_OP_KEEP: i32 = 0;
-    pub const RFX_STENCIL_OP_ZERO: i32 = 1;
-    pub const RFX_STENCIL_OP_REPLACE: i32 = 2;
-    pub const RFX_STENCIL_OP_INCREMENT_AND_CLAMP: i32 = 3;
-    pub const RFX_STENCIL_OP_DECREMENT_AND_CLAMP: i32 = 4;
-    pub const RFX_STENCIL_OP_INVERT: i32 = 5;
-    pub const RFX_STENCIL_OP_INCREMENT_AND_WRAP: i32 = 6;
-    pub const RFX_STENCIL_OP_DECREMENT_AND_WRAP: i32 = 7;
-    pub const RFX_COMPARE_NEVER: i32 = 0;
-    pub const RFX_COMPARE_LESS: i32 = 1;
-    pub const RFX_COMPARE_EQUAL: i32 = 2;
-    pub const RFX_COMPARE_LESS_EQUAL: i32 = 3;
-    pub const RFX_COMPARE_GREATER: i32 = 4;
-    pub const RFX_COMPARE_NOT_EQUAL: i32 = 5;
-    pub const RFX_COMPARE_GREATER_EQUAL: i32 = 6;
-    pub const RFX_COMPARE_ALWAYS: i32 = 7;
-    pub const RFX_SHADING_RATE_1X1: i32 = 0;
-    pub const RFX_SHADING_RATE_1X2: i32 = 1;
-    pub const RFX_SHADING_RATE_2X1: i32 = 2;
-    pub const RFX_SHADING_RATE_2X2: i32 = 3;
-    pub const RFX_SHADING_RATE_2X4: i32 = 4;
-    pub const RFX_SHADING_RATE_4X2: i32 = 5;
-    pub const RFX_SHADING_RATE_4X4: i32 = 6;
-    pub const RFX_SHADING_RATE_COMBINER_PASSTHROUGH: i32 = 0;
-    pub const RFX_SHADING_RATE_COMBINER_OVERRIDE: i32 = 1;
-    pub const RFX_SHADING_RATE_COMBINER_MIN: i32 = 2;
-    pub const RFX_SHADING_RATE_COMBINER_MAX: i32 = 3;
-    pub const RFX_SHADING_RATE_COMBINER_SUM: i32 = 4;
-    pub const RFX_UPSCALE_DISPATCH_NONE: i32 = 0;
-    pub const RFX_UPSCALE_DISPATCH_RESET_HISTORY: i32 = 1;
-    pub const RFX_UPSCALE_DISPATCH_USE_SPECULAR_MOTION: i32 = 2;
-    pub const RFX_INDEX_UINT16: i32 = 0;
-    pub const RFX_INDEX_UINT32: i32 = 1;
-    pub const RFX_AS_TOP_LEVEL: i32 = 0;
-    pub const RFX_AS_BOTTOM_LEVEL: i32 = 1;
-    pub const RFX_BUILD_AS_NONE: i32 = 0;
-    pub const RFX_BUILD_AS_PREFER_FAST_TRACE: i32 = 1;
-    pub const RFX_BUILD_AS_PREFER_FAST_BUILD: i32 = 2;
-    pub const RFX_BUILD_AS_ALLOW_UPDATE: i32 = 4;
-    pub const RFX_BUILD_AS_ALLOW_COMPACTION: i32 = 8;
-    pub const RFX_INSTANCE_NONE: i32 = 0;
-    pub const RFX_INSTANCE_TRIANGLE_CULL_DISABLE: i32 = 1;
-    pub const RFX_INSTANCE_TRIANGLE_FLIP_FACING: i32 = 2;
-    pub const RFX_INSTANCE_FORCE_OPAQUE: i32 = 4;
-    pub const RFX_INSTANCE_FORCE_NON_OPAQUE: i32 = 8;
-    pub const RFX_RT_PIPELINE_NONE: i32 = 0;
-    pub const RFX_RT_PIPELINE_SKIP_TRIANGLES: i32 = 1;
-    pub const RFX_RT_PIPELINE_SKIP_AABBS: i32 = 2;
-    pub const RFX_RT_PIPELINE_ALLOW_MICROMAPS: i32 = 4;
-    pub const RFX_SHADER_GROUP_GENERAL: i32 = 0;
-    pub const RFX_SHADER_GROUP_TRIANGLES: i32 = 1;
-    pub const RFX_SHADER_GROUP_PROCEDURAL: i32 = 2;
-    pub const RFX_TEXTURE_USAGE_SHADER_RESOURCE: i32 = 1;
-    pub const RFX_TEXTURE_USAGE_RENDER_TARGET: i32 = 2;
-    pub const RFX_TEXTURE_USAGE_DEPTH_STENCIL: i32 = 4;
-    pub const RFX_TEXTURE_USAGE_STORAGE: i32 = 8;
-    pub const RFX_MICROMAP_FORMAT_OPACITY_2_STATE: i32 = 1;
-    pub const RFX_MICROMAP_FORMAT_OPACITY_4_STATE: i32 = 2;
-    pub const RFX_BUILD_MICROMAP_NONE: i32 = 0;
-    pub const RFX_BUILD_MICROMAP_PREFER_FAST_TRACE: i32 = 1;
-    pub const RFX_BUILD_MICROMAP_PREFER_FAST_BUILD: i32 = 2;
-    pub const RFX_BUILD_MICROMAP_ALLOW_COMPACTION: i32 = 4;
-    pub const RFX_UPSCALER_NIS: i32 = 0;
-    pub const RFX_UPSCALER_FSR: i32 = 1;
-    pub const RFX_UPSCALER_XESS: i32 = 2;
-    pub const RFX_UPSCALER_DLSR: i32 = 3;
-    pub const RFX_UPSCALER_DLRR: i32 = 4;
-    pub const RFX_UPSCALER_MODE_NATIVE: i32 = 0;
-    pub const RFX_UPSCALER_MODE_ULTRA_QUALITY: i32 = 1;
-    pub const RFX_UPSCALER_MODE_QUALITY: i32 = 2;
-    pub const RFX_UPSCALER_MODE_BALANCED: i32 = 3;
-    pub const RFX_UPSCALER_MODE_PERFORMANCE: i32 = 4;
-    pub const RFX_UPSCALER_MODE_ULTRA_PERFORMANCE: i32 = 5;
-    pub const RFX_UPSCALER_NONE: i32 = 0;
-    pub const RFX_UPSCALER_HDR: i32 = 1;
-    pub const RFX_UPSCALER_SRGB: i32 = 2;
-    pub const RFX_UPSCALER_DEPTH_INVERTED: i32 = 4;
-    pub const RFX_UPSCALER_DEPTH_INFINITE: i32 = 8;
-    pub const RFX_UPSCALER_DEPTH_LINEAR: i32 = 16;
-    pub const RFX_UPSCALER_MV_UPSCALED: i32 = 32;
-    pub const RFX_UPSCALER_MV_JITTERED: i32 = 64;
-    pub const RFX_BACKEND_DEFAULT: i32 = 0;
-    pub const RFX_BACKEND_VULKAN: i32 = 1;
-    pub const RFX_BACKEND_D3D12: i32 = 2;
-    pub const RFX_BACKEND_D3D11: i32 = 3;
-    pub const RFX_BACKEND_NONE: i32 = 4;
-    pub const RFX_QUEUE_GRAPHICS: i32 = 0;
-    pub const RFX_QUEUE_COMPUTE: i32 = 1;
-    pub const RFX_QUEUE_COPY: i32 = 2;
-    pub const RFX_RESOLVE_OP_AVERAGE: i32 = 0;
-    pub const RFX_RESOLVE_OP_MIN: i32 = 1;
-    pub const RFX_RESOLVE_OP_MAX: i32 = 2;
-    pub const RFX_COPY_MODE_CLONE: i32 = 0;
-    pub const RFX_COPY_MODE_COMPACT: i32 = 1;
-    pub const RFX_LATENCY_MARKER_SIMULATION_START: i32 = 0;
-    pub const RFX_LATENCY_MARKER_SIMULATION_END: i32 = 1;
-    pub const RFX_LATENCY_MARKER_RENDER_SUBMIT_START: i32 = 2;
-    pub const RFX_LATENCY_MARKER_RENDER_SUBMIT_END: i32 = 3;
-    pub const RFX_LATENCY_MARKER_INPUT_SAMPLE: i32 = 4;
-    pub const RFX_MOUSE_BUTTON_LEFT: i32 = 0;
-    pub const RFX_MOUSE_BUTTON_RIGHT: i32 = 1;
-    pub const RFX_MOUSE_BUTTON_MIDDLE: i32 = 2;
-    pub const RFX_WINDOW_VSYNC: i32 = 1;
-    pub const RFX_WINDOW_FULLSCREEN: i32 = 2;
-    pub const RFX_WINDOW_BORDERLESS: i32 = 4;
-    pub const RFX_WINDOW_ALWAYS_ACTIVE: i32 = 8;
-    pub const RFX_WINDOW_NO_RESIZE: i32 = 16;
-    pub const RFX_WINDOW_TRANSPARENT: i32 = 32;
-    pub const RFX_WINDOW_FLOATING: i32 = 64;
-    pub const RFX_WINDOW_MAXIMIZED: i32 = 128;
-    pub const RFX_WINDOW_HIDDEN: i32 = 256;
-    pub const RFX_WINDOW_CENTERED: i32 = 512;
-    pub const RFX_WINDOW_SCALE_TO_MONITOR: i32 = 1024;
-    pub const RFX_FEATURE_MESH_SHADER: i32 = 1;
-    pub const RFX_FEATURE_RAY_TRACING: i32 = 2;
-    pub const RFX_FEATURE_UPSCALE: i32 = 4;
-    pub const RFX_FEATURE_LOW_LATENCY: i32 = 8;
-    pub const RFX_CURSOR_DEFAULT: i32 = 0;
-    pub const RFX_CURSOR_ARROW: i32 = 1;
-    pub const RFX_CURSOR_IBEAM: i32 = 2;
-    pub const RFX_CURSOR_CROSSHAIR: i32 = 3;
-    pub const RFX_CURSOR_HAND: i32 = 4;
-    pub const RFX_CURSOR_RESIZE_EW: i32 = 5;
-    pub const RFX_CURSOR_RESIZE_H: i32 = 0;
-    pub const RFX_CURSOR_RESIZE_NS: i32 = 1;
-    pub const RFX_CURSOR_RESIZE_V: i32 = 0;
-    pub const RFX_CURSOR_RESIZE_NWSE: i32 = 1;
-    pub const RFX_CURSOR_RESIZE_NESW: i32 = 2;
-    pub const RFX_CURSOR_RESIZE_ALL: i32 = 3;
-    pub const RFX_CURSOR_NOT_ALLOWED: i32 = 4;
-    pub const RFX_CURSOR_RESIZE_NW: i32 = 5;
-    pub const RFX_CURSOR_RESIZE_N: i32 = 6;
-    pub const RFX_CURSOR_RESIZE_NE: i32 = 7;
-    pub const RFX_CURSOR_RESIZE_E: i32 = 8;
-    pub const RFX_CURSOR_RESIZE_SE: i32 = 9;
-    pub const RFX_CURSOR_RESIZE_S: i32 = 10;
-    pub const RFX_CURSOR_RESIZE_SW: i32 = 11;
-    pub const RFX_CURSOR_RESIZE_W: i32 = 12;
-    pub const RFX_CURSOR_WAIT: i32 = 13;
-    pub const RFX_CURSOR_PROGRESS: i32 = 14;
-    pub const RFX_CURSOR_COUNT: i32 = 15;
-    pub const RFX_KEY_SPACE: i32 = 32;
-    pub const RFX_KEY_APOSTROPHE: i32 = 39;
-    pub const RFX_KEY_COMMA: i32 = 44;
-    pub const RFX_KEY_MINUS: i32 = 45;
-    pub const RFX_KEY_PERIOD: i32 = 46;
-    pub const RFX_KEY_SLASH: i32 = 47;
-    pub const RFX_KEY_0: i32 = 48;
-    pub const RFX_KEY_1: i32 = 49;
-    pub const RFX_KEY_2: i32 = 50;
-    pub const RFX_KEY_3: i32 = 51;
-    pub const RFX_KEY_4: i32 = 52;
-    pub const RFX_KEY_5: i32 = 53;
-    pub const RFX_KEY_6: i32 = 54;
-    pub const RFX_KEY_7: i32 = 55;
-    pub const RFX_KEY_8: i32 = 56;
-    pub const RFX_KEY_9: i32 = 57;
-    pub const RFX_KEY_SEMICOLON: i32 = 59;
-    pub const RFX_KEY_EQUAL: i32 = 61;
-    pub const RFX_KEY_A: i32 = 65;
-    pub const RFX_KEY_B: i32 = 66;
-    pub const RFX_KEY_C: i32 = 67;
-    pub const RFX_KEY_D: i32 = 68;
-    pub const RFX_KEY_E: i32 = 69;
-    pub const RFX_KEY_F: i32 = 70;
-    pub const RFX_KEY_G: i32 = 71;
-    pub const RFX_KEY_H: i32 = 72;
-    pub const RFX_KEY_I: i32 = 73;
-    pub const RFX_KEY_J: i32 = 74;
-    pub const RFX_KEY_K: i32 = 75;
-    pub const RFX_KEY_L: i32 = 76;
-    pub const RFX_KEY_M: i32 = 77;
-    pub const RFX_KEY_N: i32 = 78;
-    pub const RFX_KEY_O: i32 = 79;
-    pub const RFX_KEY_P: i32 = 80;
-    pub const RFX_KEY_Q: i32 = 81;
-    pub const RFX_KEY_R: i32 = 82;
-    pub const RFX_KEY_S: i32 = 83;
-    pub const RFX_KEY_T: i32 = 84;
-    pub const RFX_KEY_U: i32 = 85;
-    pub const RFX_KEY_V: i32 = 86;
-    pub const RFX_KEY_W: i32 = 87;
-    pub const RFX_KEY_X: i32 = 88;
-    pub const RFX_KEY_Y: i32 = 89;
-    pub const RFX_KEY_Z: i32 = 90;
-    pub const RFX_KEY_LEFT_BRACKET: i32 = 91;
-    pub const RFX_KEY_BACKSLASH: i32 = 92;
-    pub const RFX_KEY_RIGHT_BRACKET: i32 = 93;
-    pub const RFX_KEY_GRAVE_ACCENT: i32 = 96;
-    pub const RFX_KEY_ESCAPE: i32 = 256;
-    pub const RFX_KEY_ENTER: i32 = 257;
-    pub const RFX_KEY_TAB: i32 = 258;
-    pub const RFX_KEY_BACKSPACE: i32 = 259;
-    pub const RFX_KEY_INSERT: i32 = 260;
-    pub const RFX_KEY_DELETE: i32 = 261;
-    pub const RFX_KEY_RIGHT: i32 = 262;
-    pub const RFX_KEY_LEFT: i32 = 263;
-    pub const RFX_KEY_DOWN: i32 = 264;
-    pub const RFX_KEY_UP: i32 = 265;
-    pub const RFX_KEY_PAGE_UP: i32 = 266;
-    pub const RFX_KEY_PAGE_DOWN: i32 = 267;
-    pub const RFX_KEY_HOME: i32 = 268;
-    pub const RFX_KEY_END: i32 = 269;
-    pub const RFX_KEY_CAPS_LOCK: i32 = 280;
-    pub const RFX_KEY_SCROLL_LOCK: i32 = 281;
-    pub const RFX_KEY_NUM_LOCK: i32 = 282;
-    pub const RFX_KEY_PRINT_SCREEN: i32 = 283;
-    pub const RFX_KEY_PAUSE: i32 = 284;
-    pub const RFX_KEY_F1: i32 = 290;
-    pub const RFX_KEY_F2: i32 = 291;
-    pub const RFX_KEY_F3: i32 = 292;
-    pub const RFX_KEY_F4: i32 = 293;
-    pub const RFX_KEY_F5: i32 = 294;
-    pub const RFX_KEY_F6: i32 = 295;
-    pub const RFX_KEY_F7: i32 = 296;
-    pub const RFX_KEY_F8: i32 = 297;
-    pub const RFX_KEY_F9: i32 = 298;
-    pub const RFX_KEY_F10: i32 = 299;
-    pub const RFX_KEY_F11: i32 = 300;
-    pub const RFX_KEY_F12: i32 = 301;
-    pub const RFX_KEY_LEFT_SHIFT: i32 = 340;
-    pub const RFX_KEY_LEFT_CONTROL: i32 = 341;
-    pub const RFX_KEY_LEFT_ALT: i32 = 342;
-    pub const RFX_KEY_LEFT_SUPER: i32 = 343;
-    pub const RFX_KEY_RIGHT_SHIFT: i32 = 344;
-    pub const RFX_KEY_RIGHT_CONTROL: i32 = 345;
-    pub const RFX_KEY_RIGHT_ALT: i32 = 346;
-    pub const RFX_KEY_RIGHT_SUPER: i32 = 347;
-    pub const RFX_KEY_MENU: i32 = 348;
+    pub const RFX_FILTER_NEAREST: u32 = 0;
+    pub const RFX_FILTER_LINEAR: u32 = 1;
+    pub type RfxFilter = u32;
+    pub const RFX_FILTER_NEAREST: RfxFilter = 0;
+    pub const RFX_FILTER_LINEAR: RfxFilter = 1;
+    pub const RFX_WRAP_REPEAT: u32 = 0;
+    pub const RFX_WRAP_CLAMP: u32 = 1;
+    pub const RFX_WRAP_MIRROR: u32 = 2;
+    pub type RfxAddressMode = u32;
+    pub const RFX_WRAP_REPEAT: RfxAddressMode = 0;
+    pub const RFX_WRAP_CLAMP: RfxAddressMode = 1;
+    pub const RFX_WRAP_MIRROR: RfxAddressMode = 2;
+    pub const RFX_TOPOLOGY_TRIANGLE_LIST: u32 = 0;
+    pub const RFX_TOPOLOGY_TRIANGLE_STRIP: u32 = 1;
+    pub const RFX_TOPOLOGY_POINT_LIST: u32 = 2;
+    pub const RFX_TOPOLOGY_LINE_LIST: u32 = 3;
+    pub const RFX_TOPOLOGY_LINE_STRIP: u32 = 4;
+    pub const RFX_TOPOLOGY_LINE_LIST_WITH_ADJACENCY: u32 = 5;
+    pub const RFX_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY: u32 = 6;
+    pub const RFX_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY: u32 = 7;
+    pub const RFX_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY: u32 = 8;
+    pub const RFX_TOPOLOGY_PATCH_LIST: u32 = 9;
+    pub type RfxTopology = u32;
+    pub const RFX_TOPOLOGY_TRIANGLE_LIST: RfxTopology = 0;
+    pub const RFX_TOPOLOGY_TRIANGLE_STRIP: RfxTopology = 1;
+    pub const RFX_TOPOLOGY_POINT_LIST: RfxTopology = 2;
+    pub const RFX_TOPOLOGY_LINE_LIST: RfxTopology = 3;
+    pub const RFX_TOPOLOGY_LINE_STRIP: RfxTopology = 4;
+    pub const RFX_TOPOLOGY_LINE_LIST_WITH_ADJACENCY: RfxTopology = 5;
+    pub const RFX_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY: RfxTopology = 6;
+    pub const RFX_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY: RfxTopology = 7;
+    pub const RFX_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY: RfxTopology = 8;
+    pub const RFX_TOPOLOGY_PATCH_LIST: RfxTopology = 9;
+    pub type RfxBufferUsageFlags = u32;
+    pub const RFX_USAGE_SHADER_RESOURCE: RfxBufferUsageFlags = 1;
+    pub const RFX_USAGE_SHADER_RESOURCE_STORAGE: RfxBufferUsageFlags = 2;
+    pub const RFX_USAGE_VERTEX_BUFFER: RfxBufferUsageFlags = 4;
+    pub const RFX_USAGE_INDEX_BUFFER: RfxBufferUsageFlags = 8;
+    pub const RFX_USAGE_CONSTANT_BUFFER: RfxBufferUsageFlags = 16;
+    pub const RFX_USAGE_ARGUMENT_BUFFER: RfxBufferUsageFlags = 32;
+    pub const RFX_USAGE_SCRATCH_BUFFER: RfxBufferUsageFlags = 64;
+    pub const RFX_USAGE_SHADER_BINDING_TABLE: RfxBufferUsageFlags = 128;
+    pub const RFX_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT: RfxBufferUsageFlags = 256;
+    pub const RFX_USAGE_MICROMAP_BUILD_INPUT: RfxBufferUsageFlags = 512;
+    pub const RFX_USAGE_TRANSFER_SRC: RfxBufferUsageFlags = 1024;
+    pub const RFX_USAGE_TRANSFER_DST: RfxBufferUsageFlags = 2048;
+    pub const RFX_STATE_UNDEFINED: u32 = 0;
+    pub const RFX_STATE_PRESENT: u32 = 1;
+    pub const RFX_STATE_COPY_SRC: u32 = 2;
+    pub const RFX_STATE_COPY_DST: u32 = 3;
+    pub const RFX_STATE_VERTEX_BUFFER: u32 = 4;
+    pub const RFX_STATE_INDEX_BUFFER: u32 = 5;
+    pub const RFX_STATE_INDIRECT_ARGUMENT: u32 = 6;
+    pub const RFX_STATE_SHADER_READ: u32 = 7;
+    pub const RFX_STATE_SHADER_WRITE: u32 = 8;
+    pub const RFX_STATE_RENDER_TARGET: u32 = 9;
+    pub const RFX_STATE_DEPTH_READ: u32 = 10;
+    pub const RFX_STATE_DEPTH_WRITE: u32 = 11;
+    pub const RFX_STATE_SCRATCH_BUFFER: u32 = 12;
+    pub const RFX_STATE_RESOLVE_SRC: u32 = 13;
+    pub const RFX_STATE_RESOLVE_DST: u32 = 14;
+    pub type RfxResourceState = u32;
+    pub const RFX_STATE_UNDEFINED: RfxResourceState = 0;
+    pub const RFX_STATE_PRESENT: RfxResourceState = 1;
+    pub const RFX_STATE_COPY_SRC: RfxResourceState = 2;
+    pub const RFX_STATE_COPY_DST: RfxResourceState = 3;
+    pub const RFX_STATE_VERTEX_BUFFER: RfxResourceState = 4;
+    pub const RFX_STATE_INDEX_BUFFER: RfxResourceState = 5;
+    pub const RFX_STATE_INDIRECT_ARGUMENT: RfxResourceState = 6;
+    pub const RFX_STATE_SHADER_READ: RfxResourceState = 7;
+    pub const RFX_STATE_SHADER_WRITE: RfxResourceState = 8;
+    pub const RFX_STATE_RENDER_TARGET: RfxResourceState = 9;
+    pub const RFX_STATE_DEPTH_READ: RfxResourceState = 10;
+    pub const RFX_STATE_DEPTH_WRITE: RfxResourceState = 11;
+    pub const RFX_STATE_SCRATCH_BUFFER: RfxResourceState = 12;
+    pub const RFX_STATE_RESOLVE_SRC: RfxResourceState = 13;
+    pub const RFX_STATE_RESOLVE_DST: RfxResourceState = 14;
+    pub const RFX_MEM_GPU_ONLY: u32 = 0;
+    pub const RFX_MEM_CPU_TO_GPU: u32 = 1;
+    pub const RFX_MEM_GPU_TO_CPU: u32 = 2;
+    pub type RfxMemoryType = u32;
+    pub const RFX_MEM_GPU_ONLY: RfxMemoryType = 0;
+    pub const RFX_MEM_CPU_TO_GPU: RfxMemoryType = 1;
+    pub const RFX_MEM_GPU_TO_CPU: RfxMemoryType = 2;
+    pub const RFX_FORMAT_UNKNOWN: u32 = 0;
+    pub const RFX_FORMAT_RGBA8_UNORM: u32 = 1;
+    pub const RFX_FORMAT_RGBA8_SRGB: u32 = 2;
+    pub const RFX_FORMAT_BGRA8_UNORM: u32 = 3;
+    pub const RFX_FORMAT_BGRA8_SRGB: u32 = 4;
+    pub const RFX_FORMAT_R8_UINT: u32 = 5;
+    pub const RFX_FORMAT_R8_SINT: u32 = 6;
+    pub const RFX_FORMAT_RG8_UINT: u32 = 7;
+    pub const RFX_FORMAT_RG8_SINT: u32 = 8;
+    pub const RFX_FORMAT_RGBA8_UINT: u32 = 9;
+    pub const RFX_FORMAT_RGBA8_SINT: u32 = 10;
+    pub const RFX_FORMAT_R16_UINT: u32 = 11;
+    pub const RFX_FORMAT_R16_SINT: u32 = 12;
+    pub const RFX_FORMAT_R16_UNORM: u32 = 13;
+    pub const RFX_FORMAT_R16_SNORM: u32 = 14;
+    pub const RFX_FORMAT_RG16_UINT: u32 = 15;
+    pub const RFX_FORMAT_RG16_SINT: u32 = 16;
+    pub const RFX_FORMAT_RG16_UNORM: u32 = 17;
+    pub const RFX_FORMAT_RG16_SNORM: u32 = 18;
+    pub const RFX_FORMAT_RGBA16_UINT: u32 = 19;
+    pub const RFX_FORMAT_RGBA16_SINT: u32 = 20;
+    pub const RFX_FORMAT_RGBA16_UNORM: u32 = 21;
+    pub const RFX_FORMAT_RGBA16_SNORM: u32 = 22;
+    pub const RFX_FORMAT_R32_UINT: u32 = 23;
+    pub const RFX_FORMAT_R32_SINT: u32 = 24;
+    pub const RFX_FORMAT_RG32_UINT: u32 = 25;
+    pub const RFX_FORMAT_RG32_SINT: u32 = 26;
+    pub const RFX_FORMAT_RGB32_UINT: u32 = 27;
+    pub const RFX_FORMAT_RGB32_SINT: u32 = 28;
+    pub const RFX_FORMAT_RGBA32_UINT: u32 = 29;
+    pub const RFX_FORMAT_RGBA32_SINT: u32 = 30;
+    pub const RFX_FORMAT_R10_G10_B10_A2_UNORM: u32 = 31;
+    pub const RFX_FORMAT_R10_G10_B10_A2_UINT: u32 = 32;
+    pub const RFX_FORMAT_R11_G11_B10_UFLOAT: u32 = 33;
+    pub const RFX_FORMAT_R9_G9_B9_E5_UFLOAT: u32 = 34;
+    pub const RFX_FORMAT_BC1_RGBA_UNORM: u32 = 35;
+    pub const RFX_FORMAT_BC1_RGBA_SRGB: u32 = 36;
+    pub const RFX_FORMAT_BC2_RGBA_UNORM: u32 = 37;
+    pub const RFX_FORMAT_BC2_RGBA_SRGB: u32 = 38;
+    pub const RFX_FORMAT_BC3_RGBA_UNORM: u32 = 39;
+    pub const RFX_FORMAT_BC3_RGBA_SRGB: u32 = 40;
+    pub const RFX_FORMAT_BC4_R_UNORM: u32 = 41;
+    pub const RFX_FORMAT_BC4_R_SNORM: u32 = 42;
+    pub const RFX_FORMAT_BC5_RG_UNORM: u32 = 43;
+    pub const RFX_FORMAT_BC5_RG_SNORM: u32 = 44;
+    pub const RFX_FORMAT_BC6H_RGB_UFLOAT: u32 = 45;
+    pub const RFX_FORMAT_BC6H_RGB_SFLOAT: u32 = 46;
+    pub const RFX_FORMAT_BC7_RGBA_UNORM: u32 = 47;
+    pub const RFX_FORMAT_BC7_RGBA_SRGB: u32 = 48;
+    pub const RFX_FORMAT_D16_UNORM: u32 = 49;
+    pub const RFX_FORMAT_D24_UNORM_S8_UINT: u32 = 50;
+    pub const RFX_FORMAT_D32_FLOAT: u32 = 51;
+    pub const RFX_FORMAT_D32_FLOAT_S8_UINT_X24: u32 = 52;
+    pub const RFX_FORMAT_R32_FLOAT: u32 = 53;
+    pub const RFX_FORMAT_RG32_FLOAT: u32 = 54;
+    pub const RFX_FORMAT_RGB32_FLOAT: u32 = 55;
+    pub const RFX_FORMAT_RGBA32_FLOAT: u32 = 56;
+    pub const RFX_FORMAT_RGBA16_FLOAT: u32 = 57;
+    pub type RfxFormat = u32;
+    pub const RFX_FORMAT_UNKNOWN: RfxFormat = 0;
+    pub const RFX_FORMAT_RGBA8_UNORM: RfxFormat = 1;
+    pub const RFX_FORMAT_RGBA8_SRGB: RfxFormat = 2;
+    pub const RFX_FORMAT_BGRA8_UNORM: RfxFormat = 3;
+    pub const RFX_FORMAT_BGRA8_SRGB: RfxFormat = 4;
+    pub const RFX_FORMAT_R8_UINT: RfxFormat = 5;
+    pub const RFX_FORMAT_R8_SINT: RfxFormat = 6;
+    pub const RFX_FORMAT_RG8_UINT: RfxFormat = 7;
+    pub const RFX_FORMAT_RG8_SINT: RfxFormat = 8;
+    pub const RFX_FORMAT_RGBA8_UINT: RfxFormat = 9;
+    pub const RFX_FORMAT_RGBA8_SINT: RfxFormat = 10;
+    pub const RFX_FORMAT_R16_UINT: RfxFormat = 11;
+    pub const RFX_FORMAT_R16_SINT: RfxFormat = 12;
+    pub const RFX_FORMAT_R16_UNORM: RfxFormat = 13;
+    pub const RFX_FORMAT_R16_SNORM: RfxFormat = 14;
+    pub const RFX_FORMAT_RG16_UINT: RfxFormat = 15;
+    pub const RFX_FORMAT_RG16_SINT: RfxFormat = 16;
+    pub const RFX_FORMAT_RG16_UNORM: RfxFormat = 17;
+    pub const RFX_FORMAT_RG16_SNORM: RfxFormat = 18;
+    pub const RFX_FORMAT_RGBA16_UINT: RfxFormat = 19;
+    pub const RFX_FORMAT_RGBA16_SINT: RfxFormat = 20;
+    pub const RFX_FORMAT_RGBA16_UNORM: RfxFormat = 21;
+    pub const RFX_FORMAT_RGBA16_SNORM: RfxFormat = 22;
+    pub const RFX_FORMAT_R32_UINT: RfxFormat = 23;
+    pub const RFX_FORMAT_R32_SINT: RfxFormat = 24;
+    pub const RFX_FORMAT_RG32_UINT: RfxFormat = 25;
+    pub const RFX_FORMAT_RG32_SINT: RfxFormat = 26;
+    pub const RFX_FORMAT_RGB32_UINT: RfxFormat = 27;
+    pub const RFX_FORMAT_RGB32_SINT: RfxFormat = 28;
+    pub const RFX_FORMAT_RGBA32_UINT: RfxFormat = 29;
+    pub const RFX_FORMAT_RGBA32_SINT: RfxFormat = 30;
+    pub const RFX_FORMAT_R10_G10_B10_A2_UNORM: RfxFormat = 31;
+    pub const RFX_FORMAT_R10_G10_B10_A2_UINT: RfxFormat = 32;
+    pub const RFX_FORMAT_R11_G11_B10_UFLOAT: RfxFormat = 33;
+    pub const RFX_FORMAT_R9_G9_B9_E5_UFLOAT: RfxFormat = 34;
+    pub const RFX_FORMAT_BC1_RGBA_UNORM: RfxFormat = 35;
+    pub const RFX_FORMAT_BC1_RGBA_SRGB: RfxFormat = 36;
+    pub const RFX_FORMAT_BC2_RGBA_UNORM: RfxFormat = 37;
+    pub const RFX_FORMAT_BC2_RGBA_SRGB: RfxFormat = 38;
+    pub const RFX_FORMAT_BC3_RGBA_UNORM: RfxFormat = 39;
+    pub const RFX_FORMAT_BC3_RGBA_SRGB: RfxFormat = 40;
+    pub const RFX_FORMAT_BC4_R_UNORM: RfxFormat = 41;
+    pub const RFX_FORMAT_BC4_R_SNORM: RfxFormat = 42;
+    pub const RFX_FORMAT_BC5_RG_UNORM: RfxFormat = 43;
+    pub const RFX_FORMAT_BC5_RG_SNORM: RfxFormat = 44;
+    pub const RFX_FORMAT_BC6H_RGB_UFLOAT: RfxFormat = 45;
+    pub const RFX_FORMAT_BC6H_RGB_SFLOAT: RfxFormat = 46;
+    pub const RFX_FORMAT_BC7_RGBA_UNORM: RfxFormat = 47;
+    pub const RFX_FORMAT_BC7_RGBA_SRGB: RfxFormat = 48;
+    pub const RFX_FORMAT_D16_UNORM: RfxFormat = 49;
+    pub const RFX_FORMAT_D24_UNORM_S8_UINT: RfxFormat = 50;
+    pub const RFX_FORMAT_D32_FLOAT: RfxFormat = 51;
+    pub const RFX_FORMAT_D32_FLOAT_S8_UINT_X24: RfxFormat = 52;
+    pub const RFX_FORMAT_R32_FLOAT: RfxFormat = 53;
+    pub const RFX_FORMAT_RG32_FLOAT: RfxFormat = 54;
+    pub const RFX_FORMAT_RGB32_FLOAT: RfxFormat = 55;
+    pub const RFX_FORMAT_RGBA32_FLOAT: RfxFormat = 56;
+    pub const RFX_FORMAT_RGBA16_FLOAT: RfxFormat = 57;
+    pub const RFX_BLEND_FACTOR_ZERO: u32 = 0;
+    pub const RFX_BLEND_FACTOR_ONE: u32 = 1;
+    pub const RFX_BLEND_FACTOR_SRC_COLOR: u32 = 2;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC_COLOR: u32 = 3;
+    pub const RFX_BLEND_FACTOR_DST_COLOR: u32 = 4;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_DST_COLOR: u32 = 5;
+    pub const RFX_BLEND_FACTOR_SRC_ALPHA: u32 = 6;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA: u32 = 7;
+    pub const RFX_BLEND_FACTOR_DST_ALPHA: u32 = 8;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_DST_ALPHA: u32 = 9;
+    pub const RFX_BLEND_FACTOR_CONSTANT_COLOR: u32 = 10;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR: u32 = 11;
+    pub const RFX_BLEND_FACTOR_CONSTANT_ALPHA: u32 = 12;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA: u32 = 13;
+    pub const RFX_BLEND_FACTOR_SRC_ALPHA_SATURATE: u32 = 14;
+    pub const RFX_BLEND_FACTOR_SRC1_COLOR: u32 = 15;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR: u32 = 16;
+    pub const RFX_BLEND_FACTOR_SRC1_ALPHA: u32 = 17;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA: u32 = 18;
+    pub type RfxBlendFactor = u32;
+    pub const RFX_BLEND_FACTOR_ZERO: RfxBlendFactor = 0;
+    pub const RFX_BLEND_FACTOR_ONE: RfxBlendFactor = 1;
+    pub const RFX_BLEND_FACTOR_SRC_COLOR: RfxBlendFactor = 2;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC_COLOR: RfxBlendFactor = 3;
+    pub const RFX_BLEND_FACTOR_DST_COLOR: RfxBlendFactor = 4;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_DST_COLOR: RfxBlendFactor = 5;
+    pub const RFX_BLEND_FACTOR_SRC_ALPHA: RfxBlendFactor = 6;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA: RfxBlendFactor = 7;
+    pub const RFX_BLEND_FACTOR_DST_ALPHA: RfxBlendFactor = 8;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_DST_ALPHA: RfxBlendFactor = 9;
+    pub const RFX_BLEND_FACTOR_CONSTANT_COLOR: RfxBlendFactor = 10;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR: RfxBlendFactor = 11;
+    pub const RFX_BLEND_FACTOR_CONSTANT_ALPHA: RfxBlendFactor = 12;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA: RfxBlendFactor = 13;
+    pub const RFX_BLEND_FACTOR_SRC_ALPHA_SATURATE: RfxBlendFactor = 14;
+    pub const RFX_BLEND_FACTOR_SRC1_COLOR: RfxBlendFactor = 15;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR: RfxBlendFactor = 16;
+    pub const RFX_BLEND_FACTOR_SRC1_ALPHA: RfxBlendFactor = 17;
+    pub const RFX_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA: RfxBlendFactor = 18;
+    pub const RFX_BLEND_OP_ADD: u32 = 0;
+    pub const RFX_BLEND_OP_SUBTRACT: u32 = 1;
+    pub const RFX_BLEND_OP_REVERSE_SUBTRACT: u32 = 2;
+    pub const RFX_BLEND_OP_MIN: u32 = 3;
+    pub const RFX_BLEND_OP_MAX: u32 = 4;
+    pub type RfxBlendOp = u32;
+    pub const RFX_BLEND_OP_ADD: RfxBlendOp = 0;
+    pub const RFX_BLEND_OP_SUBTRACT: RfxBlendOp = 1;
+    pub const RFX_BLEND_OP_REVERSE_SUBTRACT: RfxBlendOp = 2;
+    pub const RFX_BLEND_OP_MIN: RfxBlendOp = 3;
+    pub const RFX_BLEND_OP_MAX: RfxBlendOp = 4;
+    pub type RfxColorWriteMask = u32;
+    pub const RFX_COLOR_WRITE_RED: RfxColorWriteMask = 1;
+    pub const RFX_COLOR_WRITE_GREEN: RfxColorWriteMask = 2;
+    pub const RFX_COLOR_WRITE_BLUE: RfxColorWriteMask = 4;
+    pub const RFX_COLOR_WRITE_ALPHA: RfxColorWriteMask = 8;
+    pub const RFX_COLOR_WRITE_ALL: RfxColorWriteMask = 15;
+    pub const RFX_QUERY_TYPE_TIMESTAMP: u32 = 0;
+    pub const RFX_QUERY_TYPE_OCCLUSION: u32 = 1;
+    pub type RfxQueryType = u32;
+    pub const RFX_QUERY_TYPE_TIMESTAMP: RfxQueryType = 0;
+    pub const RFX_QUERY_TYPE_OCCLUSION: RfxQueryType = 1;
+    pub const RFX_CULL_NONE: u32 = 0;
+    pub const RFX_CULL_BACK: u32 = 1;
+    pub const RFX_CULL_FRONT: u32 = 2;
+    pub type RfxCullMode = u32;
+    pub const RFX_CULL_NONE: RfxCullMode = 0;
+    pub const RFX_CULL_BACK: RfxCullMode = 1;
+    pub const RFX_CULL_FRONT: RfxCullMode = 2;
+    pub const RFX_DENOISER_REBLUR_DIFFUSE: u32 = 0;
+    pub const RFX_DENOISER_REBLUR_DIFFUSE_SPECULAR: u32 = 1;
+    pub const RFX_DENOISER_RELAX_DIFFUSE: u32 = 2;
+    pub const RFX_DENOISER_RELAX_DIFFUSE_SPECULAR: u32 = 3;
+    pub const RFX_DENOISER_SIGMA_SHADOW: u32 = 4;
+    pub type RfxDenoiserType = u32;
+    pub const RFX_DENOISER_REBLUR_DIFFUSE: RfxDenoiserType = 0;
+    pub const RFX_DENOISER_REBLUR_DIFFUSE_SPECULAR: RfxDenoiserType = 1;
+    pub const RFX_DENOISER_RELAX_DIFFUSE: RfxDenoiserType = 2;
+    pub const RFX_DENOISER_RELAX_DIFFUSE_SPECULAR: RfxDenoiserType = 3;
+    pub const RFX_DENOISER_SIGMA_SHADOW: RfxDenoiserType = 4;
+    pub const RFX_DENOISER_IN_VIEWZ: u32 = 0;
+    pub const RFX_DENOISER_IN_MV: u32 = 1;
+    pub const RFX_DENOISER_IN_NORMAL_ROUGHNESS: u32 = 2;
+    pub const RFX_DENOISER_IN_DIFF_RADIANCE: u32 = 3;
+    pub const RFX_DENOISER_IN_SPEC_RADIANCE: u32 = 4;
+    pub const RFX_DENOISER_IN_SHADOW_DATA: u32 = 5;
+    pub const RFX_DENOISER_OUT_DIFF_RADIANCE: u32 = 6;
+    pub const RFX_DENOISER_OUT_SPEC_RADIANCE: u32 = 7;
+    pub const RFX_DENOISER_OUT_SHADOW: u32 = 8;
+    pub const RFX_DENOISER_OUT_VALIDATION: u32 = 9;
+    pub const RFX_DENOISER_RESOURCE_COUNT: u32 = 10;
+    pub type RfxDenoiserResourceId = u32;
+    pub const RFX_DENOISER_IN_VIEWZ: RfxDenoiserResourceId = 0;
+    pub const RFX_DENOISER_IN_MV: RfxDenoiserResourceId = 1;
+    pub const RFX_DENOISER_IN_NORMAL_ROUGHNESS: RfxDenoiserResourceId = 2;
+    pub const RFX_DENOISER_IN_DIFF_RADIANCE: RfxDenoiserResourceId = 3;
+    pub const RFX_DENOISER_IN_SPEC_RADIANCE: RfxDenoiserResourceId = 4;
+    pub const RFX_DENOISER_IN_SHADOW_DATA: RfxDenoiserResourceId = 5;
+    pub const RFX_DENOISER_OUT_DIFF_RADIANCE: RfxDenoiserResourceId = 6;
+    pub const RFX_DENOISER_OUT_SPEC_RADIANCE: RfxDenoiserResourceId = 7;
+    pub const RFX_DENOISER_OUT_SHADOW: RfxDenoiserResourceId = 8;
+    pub const RFX_DENOISER_OUT_VALIDATION: RfxDenoiserResourceId = 9;
+    pub const RFX_DENOISER_RESOURCE_COUNT: RfxDenoiserResourceId = 10;
+    pub const RFX_STENCIL_OP_KEEP: u32 = 0;
+    pub const RFX_STENCIL_OP_ZERO: u32 = 1;
+    pub const RFX_STENCIL_OP_REPLACE: u32 = 2;
+    pub const RFX_STENCIL_OP_INCREMENT_AND_CLAMP: u32 = 3;
+    pub const RFX_STENCIL_OP_DECREMENT_AND_CLAMP: u32 = 4;
+    pub const RFX_STENCIL_OP_INVERT: u32 = 5;
+    pub const RFX_STENCIL_OP_INCREMENT_AND_WRAP: u32 = 6;
+    pub const RFX_STENCIL_OP_DECREMENT_AND_WRAP: u32 = 7;
+    pub type RfxStencilOp = u32;
+    pub const RFX_STENCIL_OP_KEEP: RfxStencilOp = 0;
+    pub const RFX_STENCIL_OP_ZERO: RfxStencilOp = 1;
+    pub const RFX_STENCIL_OP_REPLACE: RfxStencilOp = 2;
+    pub const RFX_STENCIL_OP_INCREMENT_AND_CLAMP: RfxStencilOp = 3;
+    pub const RFX_STENCIL_OP_DECREMENT_AND_CLAMP: RfxStencilOp = 4;
+    pub const RFX_STENCIL_OP_INVERT: RfxStencilOp = 5;
+    pub const RFX_STENCIL_OP_INCREMENT_AND_WRAP: RfxStencilOp = 6;
+    pub const RFX_STENCIL_OP_DECREMENT_AND_WRAP: RfxStencilOp = 7;
+    pub const RFX_COMPARE_NEVER: u32 = 0;
+    pub const RFX_COMPARE_LESS: u32 = 1;
+    pub const RFX_COMPARE_EQUAL: u32 = 2;
+    pub const RFX_COMPARE_LESS_EQUAL: u32 = 3;
+    pub const RFX_COMPARE_GREATER: u32 = 4;
+    pub const RFX_COMPARE_NOT_EQUAL: u32 = 5;
+    pub const RFX_COMPARE_GREATER_EQUAL: u32 = 6;
+    pub const RFX_COMPARE_ALWAYS: u32 = 7;
+    pub type RfxCompareOp = u32;
+    pub const RFX_COMPARE_NEVER: RfxCompareOp = 0;
+    pub const RFX_COMPARE_LESS: RfxCompareOp = 1;
+    pub const RFX_COMPARE_EQUAL: RfxCompareOp = 2;
+    pub const RFX_COMPARE_LESS_EQUAL: RfxCompareOp = 3;
+    pub const RFX_COMPARE_GREATER: RfxCompareOp = 4;
+    pub const RFX_COMPARE_NOT_EQUAL: RfxCompareOp = 5;
+    pub const RFX_COMPARE_GREATER_EQUAL: RfxCompareOp = 6;
+    pub const RFX_COMPARE_ALWAYS: RfxCompareOp = 7;
+    pub const RFX_SHADING_RATE_1X1: u32 = 0;
+    pub const RFX_SHADING_RATE_1X2: u32 = 1;
+    pub const RFX_SHADING_RATE_2X1: u32 = 2;
+    pub const RFX_SHADING_RATE_2X2: u32 = 3;
+    pub const RFX_SHADING_RATE_2X4: u32 = 4;
+    pub const RFX_SHADING_RATE_4X2: u32 = 5;
+    pub const RFX_SHADING_RATE_4X4: u32 = 6;
+    pub type RfxShadingRate = u32;
+    pub const RFX_SHADING_RATE_1X1: RfxShadingRate = 0;
+    pub const RFX_SHADING_RATE_1X2: RfxShadingRate = 1;
+    pub const RFX_SHADING_RATE_2X1: RfxShadingRate = 2;
+    pub const RFX_SHADING_RATE_2X2: RfxShadingRate = 3;
+    pub const RFX_SHADING_RATE_2X4: RfxShadingRate = 4;
+    pub const RFX_SHADING_RATE_4X2: RfxShadingRate = 5;
+    pub const RFX_SHADING_RATE_4X4: RfxShadingRate = 6;
+    pub const RFX_SHADING_RATE_COMBINER_PASSTHROUGH: u32 = 0;
+    pub const RFX_SHADING_RATE_COMBINER_OVERRIDE: u32 = 1;
+    pub const RFX_SHADING_RATE_COMBINER_MIN: u32 = 2;
+    pub const RFX_SHADING_RATE_COMBINER_MAX: u32 = 3;
+    pub const RFX_SHADING_RATE_COMBINER_SUM: u32 = 4;
+    pub type RfxShadingRateCombiner = u32;
+    pub const RFX_SHADING_RATE_COMBINER_PASSTHROUGH: RfxShadingRateCombiner = 0;
+    pub const RFX_SHADING_RATE_COMBINER_OVERRIDE: RfxShadingRateCombiner = 1;
+    pub const RFX_SHADING_RATE_COMBINER_MIN: RfxShadingRateCombiner = 2;
+    pub const RFX_SHADING_RATE_COMBINER_MAX: RfxShadingRateCombiner = 3;
+    pub const RFX_SHADING_RATE_COMBINER_SUM: RfxShadingRateCombiner = 4;
+    pub type RfxUpscaleDispatchFlags = u32;
+    pub const RFX_UPSCALE_DISPATCH_NONE: RfxUpscaleDispatchFlags = 0;
+    pub const RFX_UPSCALE_DISPATCH_RESET_HISTORY: RfxUpscaleDispatchFlags = 1;
+    pub const RFX_UPSCALE_DISPATCH_USE_SPECULAR_MOTION: RfxUpscaleDispatchFlags = 2;
+    pub const RFX_INDEX_UINT16: u32 = 0;
+    pub const RFX_INDEX_UINT32: u32 = 1;
+    pub type RfxIndexType = u32;
+    pub const RFX_INDEX_UINT16: RfxIndexType = 0;
+    pub const RFX_INDEX_UINT32: RfxIndexType = 1;
+    pub const RFX_AS_TOP_LEVEL: u32 = 0;
+    pub const RFX_AS_BOTTOM_LEVEL: u32 = 1;
+    pub type RfxAccelerationStructureType = u32;
+    pub const RFX_AS_TOP_LEVEL: RfxAccelerationStructureType = 0;
+    pub const RFX_AS_BOTTOM_LEVEL: RfxAccelerationStructureType = 1;
+    pub type RfxBuildASFlags = u32;
+    pub const RFX_BUILD_AS_NONE: RfxBuildASFlags = 0;
+    pub const RFX_BUILD_AS_PREFER_FAST_TRACE: RfxBuildASFlags = 1;
+    pub const RFX_BUILD_AS_PREFER_FAST_BUILD: RfxBuildASFlags = 2;
+    pub const RFX_BUILD_AS_ALLOW_UPDATE: RfxBuildASFlags = 4;
+    pub const RFX_BUILD_AS_ALLOW_COMPACTION: RfxBuildASFlags = 8;
+    pub type RfxInstanceFlags = u32;
+    pub const RFX_INSTANCE_NONE: RfxInstanceFlags = 0;
+    pub const RFX_INSTANCE_TRIANGLE_CULL_DISABLE: RfxInstanceFlags = 1;
+    pub const RFX_INSTANCE_TRIANGLE_FLIP_FACING: RfxInstanceFlags = 2;
+    pub const RFX_INSTANCE_FORCE_OPAQUE: RfxInstanceFlags = 4;
+    pub const RFX_INSTANCE_FORCE_NON_OPAQUE: RfxInstanceFlags = 8;
+    pub type RfxRayTracingPipelineFlags = u32;
+    pub const RFX_RT_PIPELINE_NONE: RfxRayTracingPipelineFlags = 0;
+    pub const RFX_RT_PIPELINE_SKIP_TRIANGLES: RfxRayTracingPipelineFlags = 1;
+    pub const RFX_RT_PIPELINE_SKIP_AABBS: RfxRayTracingPipelineFlags = 2;
+    pub const RFX_RT_PIPELINE_ALLOW_MICROMAPS: RfxRayTracingPipelineFlags = 4;
+    pub const RFX_SHADER_GROUP_GENERAL: u32 = 0;
+    pub const RFX_SHADER_GROUP_TRIANGLES: u32 = 1;
+    pub const RFX_SHADER_GROUP_PROCEDURAL: u32 = 2;
+    pub type RfxShaderGroupType = u32;
+    pub const RFX_SHADER_GROUP_GENERAL: RfxShaderGroupType = 0;
+    pub const RFX_SHADER_GROUP_TRIANGLES: RfxShaderGroupType = 1;
+    pub const RFX_SHADER_GROUP_PROCEDURAL: RfxShaderGroupType = 2;
+    pub type RfxTextureUsageFlags = u32;
+    pub const RFX_TEXTURE_USAGE_SHADER_RESOURCE: RfxTextureUsageFlags = 1;
+    pub const RFX_TEXTURE_USAGE_RENDER_TARGET: RfxTextureUsageFlags = 2;
+    pub const RFX_TEXTURE_USAGE_DEPTH_STENCIL: RfxTextureUsageFlags = 4;
+    pub const RFX_TEXTURE_USAGE_STORAGE: RfxTextureUsageFlags = 8;
+    pub const RFX_MICROMAP_FORMAT_OPACITY_2_STATE: u32 = 1;
+    pub const RFX_MICROMAP_FORMAT_OPACITY_4_STATE: u32 = 2;
+    pub type RfxMicromapFormat = u32;
+    pub const RFX_MICROMAP_FORMAT_OPACITY_2_STATE: RfxMicromapFormat = 1;
+    pub const RFX_MICROMAP_FORMAT_OPACITY_4_STATE: RfxMicromapFormat = 2;
+    pub type RfxBuildMicromapFlags = u32;
+    pub const RFX_BUILD_MICROMAP_NONE: RfxBuildMicromapFlags = 0;
+    pub const RFX_BUILD_MICROMAP_PREFER_FAST_TRACE: RfxBuildMicromapFlags = 1;
+    pub const RFX_BUILD_MICROMAP_PREFER_FAST_BUILD: RfxBuildMicromapFlags = 2;
+    pub const RFX_BUILD_MICROMAP_ALLOW_COMPACTION: RfxBuildMicromapFlags = 4;
+    pub const RFX_UPSCALER_NIS: u32 = 0;
+    pub const RFX_UPSCALER_FSR: u32 = 1;
+    pub const RFX_UPSCALER_XESS: u32 = 2;
+    pub const RFX_UPSCALER_DLSR: u32 = 3;
+    pub const RFX_UPSCALER_DLRR: u32 = 4;
+    pub type RfxUpscalerType = u32;
+    pub const RFX_UPSCALER_NIS: RfxUpscalerType = 0;
+    pub const RFX_UPSCALER_FSR: RfxUpscalerType = 1;
+    pub const RFX_UPSCALER_XESS: RfxUpscalerType = 2;
+    pub const RFX_UPSCALER_DLSR: RfxUpscalerType = 3;
+    pub const RFX_UPSCALER_DLRR: RfxUpscalerType = 4;
+    pub const RFX_UPSCALER_MODE_NATIVE: u32 = 0;
+    pub const RFX_UPSCALER_MODE_ULTRA_QUALITY: u32 = 1;
+    pub const RFX_UPSCALER_MODE_QUALITY: u32 = 2;
+    pub const RFX_UPSCALER_MODE_BALANCED: u32 = 3;
+    pub const RFX_UPSCALER_MODE_PERFORMANCE: u32 = 4;
+    pub const RFX_UPSCALER_MODE_ULTRA_PERFORMANCE: u32 = 5;
+    pub type RfxUpscalerMode = u32;
+    pub const RFX_UPSCALER_MODE_NATIVE: RfxUpscalerMode = 0;
+    pub const RFX_UPSCALER_MODE_ULTRA_QUALITY: RfxUpscalerMode = 1;
+    pub const RFX_UPSCALER_MODE_QUALITY: RfxUpscalerMode = 2;
+    pub const RFX_UPSCALER_MODE_BALANCED: RfxUpscalerMode = 3;
+    pub const RFX_UPSCALER_MODE_PERFORMANCE: RfxUpscalerMode = 4;
+    pub const RFX_UPSCALER_MODE_ULTRA_PERFORMANCE: RfxUpscalerMode = 5;
+    pub type RfxUpscalerFlags = u32;
+    pub const RFX_UPSCALER_NONE: RfxUpscalerFlags = 0;
+    pub const RFX_UPSCALER_HDR: RfxUpscalerFlags = 1;
+    pub const RFX_UPSCALER_SRGB: RfxUpscalerFlags = 2;
+    pub const RFX_UPSCALER_DEPTH_INVERTED: RfxUpscalerFlags = 4;
+    pub const RFX_UPSCALER_DEPTH_INFINITE: RfxUpscalerFlags = 8;
+    pub const RFX_UPSCALER_DEPTH_LINEAR: RfxUpscalerFlags = 16;
+    pub const RFX_UPSCALER_MV_UPSCALED: RfxUpscalerFlags = 32;
+    pub const RFX_UPSCALER_MV_JITTERED: RfxUpscalerFlags = 64;
+    pub type RfxBackend = u32;
+    pub const RFX_BACKEND_DEFAULT: RfxBackend = 0;
+    pub const RFX_BACKEND_VULKAN: RfxBackend = 1;
+    pub const RFX_BACKEND_D3D12: RfxBackend = 2;
+    pub const RFX_BACKEND_D3D11: RfxBackend = 3;
+    pub const RFX_BACKEND_NONE: RfxBackend = 4;
+    pub const RFX_QUEUE_GRAPHICS: u32 = 0;
+    pub const RFX_QUEUE_COMPUTE: u32 = 1;
+    pub const RFX_QUEUE_COPY: u32 = 2;
+    pub type RfxQueueType = u32;
+    pub const RFX_QUEUE_GRAPHICS: RfxQueueType = 0;
+    pub const RFX_QUEUE_COMPUTE: RfxQueueType = 1;
+    pub const RFX_QUEUE_COPY: RfxQueueType = 2;
+    pub const RFX_RESOLVE_OP_AVERAGE: u32 = 0;
+    pub const RFX_RESOLVE_OP_MIN: u32 = 1;
+    pub const RFX_RESOLVE_OP_MAX: u32 = 2;
+    pub type RfxResolveOp = u32;
+    pub const RFX_RESOLVE_OP_AVERAGE: RfxResolveOp = 0;
+    pub const RFX_RESOLVE_OP_MIN: RfxResolveOp = 1;
+    pub const RFX_RESOLVE_OP_MAX: RfxResolveOp = 2;
+    pub const RFX_COPY_MODE_CLONE: u32 = 0;
+    pub const RFX_COPY_MODE_COMPACT: u32 = 1;
+    pub type RfxCopyMode = u32;
+    pub const RFX_COPY_MODE_CLONE: RfxCopyMode = 0;
+    pub const RFX_COPY_MODE_COMPACT: RfxCopyMode = 1;
+    pub const RFX_LATENCY_MARKER_SIMULATION_START: u32 = 0;
+    pub const RFX_LATENCY_MARKER_SIMULATION_END: u32 = 1;
+    pub const RFX_LATENCY_MARKER_RENDER_SUBMIT_START: u32 = 2;
+    pub const RFX_LATENCY_MARKER_RENDER_SUBMIT_END: u32 = 3;
+    pub const RFX_LATENCY_MARKER_INPUT_SAMPLE: u32 = 4;
+    pub type RfxLatencyMarker = u32;
+    pub const RFX_LATENCY_MARKER_SIMULATION_START: RfxLatencyMarker = 0;
+    pub const RFX_LATENCY_MARKER_SIMULATION_END: RfxLatencyMarker = 1;
+    pub const RFX_LATENCY_MARKER_RENDER_SUBMIT_START: RfxLatencyMarker = 2;
+    pub const RFX_LATENCY_MARKER_RENDER_SUBMIT_END: RfxLatencyMarker = 3;
+    pub const RFX_LATENCY_MARKER_INPUT_SAMPLE: RfxLatencyMarker = 4;
+    pub type RfxMouseButton = u32;
+    pub const RFX_MOUSE_BUTTON_LEFT: RfxMouseButton = 0;
+    pub const RFX_MOUSE_BUTTON_RIGHT: RfxMouseButton = 1;
+    pub const RFX_MOUSE_BUTTON_MIDDLE: RfxMouseButton = 2;
+    pub type RfxWindowFlags = u32;
+    pub const RFX_WINDOW_VSYNC: RfxWindowFlags = 1;
+    pub const RFX_WINDOW_FULLSCREEN: RfxWindowFlags = 2;
+    pub const RFX_WINDOW_BORDERLESS: RfxWindowFlags = 4;
+    pub const RFX_WINDOW_ALWAYS_ACTIVE: RfxWindowFlags = 8;
+    pub const RFX_WINDOW_NO_RESIZE: RfxWindowFlags = 16;
+    pub const RFX_WINDOW_TRANSPARENT: RfxWindowFlags = 32;
+    pub const RFX_WINDOW_FLOATING: RfxWindowFlags = 64;
+    pub const RFX_WINDOW_MAXIMIZED: RfxWindowFlags = 128;
+    pub const RFX_WINDOW_HIDDEN: RfxWindowFlags = 256;
+    pub const RFX_WINDOW_CENTERED: RfxWindowFlags = 512;
+    pub const RFX_WINDOW_SCALE_TO_MONITOR: RfxWindowFlags = 1024;
+    pub type RfxFeatureSupportFlags = u32;
+    pub const RFX_FEATURE_MESH_SHADER: RfxFeatureSupportFlags = 1;
+    pub const RFX_FEATURE_RAY_TRACING: RfxFeatureSupportFlags = 2;
+    pub const RFX_FEATURE_UPSCALE: RfxFeatureSupportFlags = 4;
+    pub const RFX_FEATURE_LOW_LATENCY: RfxFeatureSupportFlags = 8;
+    pub const RFX_CURSOR_DEFAULT: u32 = 0;
+    pub const RFX_CURSOR_ARROW: u32 = 1;
+    pub const RFX_CURSOR_IBEAM: u32 = 2;
+    pub const RFX_CURSOR_CROSSHAIR: u32 = 3;
+    pub const RFX_CURSOR_HAND: u32 = 4;
+    pub const RFX_CURSOR_RESIZE_EW: u32 = 5;
+    pub const RFX_CURSOR_RESIZE_H: u32 = 0;
+    pub const RFX_CURSOR_RESIZE_NS: u32 = 1;
+    pub const RFX_CURSOR_RESIZE_V: u32 = 0;
+    pub const RFX_CURSOR_RESIZE_NWSE: u32 = 1;
+    pub const RFX_CURSOR_RESIZE_NESW: u32 = 2;
+    pub const RFX_CURSOR_RESIZE_ALL: u32 = 3;
+    pub const RFX_CURSOR_NOT_ALLOWED: u32 = 4;
+    pub const RFX_CURSOR_RESIZE_NW: u32 = 5;
+    pub const RFX_CURSOR_RESIZE_N: u32 = 6;
+    pub const RFX_CURSOR_RESIZE_NE: u32 = 7;
+    pub const RFX_CURSOR_RESIZE_E: u32 = 8;
+    pub const RFX_CURSOR_RESIZE_SE: u32 = 9;
+    pub const RFX_CURSOR_RESIZE_S: u32 = 10;
+    pub const RFX_CURSOR_RESIZE_SW: u32 = 11;
+    pub const RFX_CURSOR_RESIZE_W: u32 = 12;
+    pub const RFX_CURSOR_WAIT: u32 = 13;
+    pub const RFX_CURSOR_PROGRESS: u32 = 14;
+    pub const RFX_CURSOR_COUNT: u32 = 15;
+    pub type RfxCursorType = u32;
+    pub const RFX_CURSOR_DEFAULT: RfxCursorType = 0;
+    pub const RFX_CURSOR_ARROW: RfxCursorType = 1;
+    pub const RFX_CURSOR_IBEAM: RfxCursorType = 2;
+    pub const RFX_CURSOR_CROSSHAIR: RfxCursorType = 3;
+    pub const RFX_CURSOR_HAND: RfxCursorType = 4;
+    pub const RFX_CURSOR_RESIZE_EW: RfxCursorType = 5;
+    pub const RFX_CURSOR_RESIZE_H: RfxCursorType = 0;
+    pub const RFX_CURSOR_RESIZE_NS: RfxCursorType = 1;
+    pub const RFX_CURSOR_RESIZE_V: RfxCursorType = 0;
+    pub const RFX_CURSOR_RESIZE_NWSE: RfxCursorType = 1;
+    pub const RFX_CURSOR_RESIZE_NESW: RfxCursorType = 2;
+    pub const RFX_CURSOR_RESIZE_ALL: RfxCursorType = 3;
+    pub const RFX_CURSOR_NOT_ALLOWED: RfxCursorType = 4;
+    pub const RFX_CURSOR_RESIZE_NW: RfxCursorType = 5;
+    pub const RFX_CURSOR_RESIZE_N: RfxCursorType = 6;
+    pub const RFX_CURSOR_RESIZE_NE: RfxCursorType = 7;
+    pub const RFX_CURSOR_RESIZE_E: RfxCursorType = 8;
+    pub const RFX_CURSOR_RESIZE_SE: RfxCursorType = 9;
+    pub const RFX_CURSOR_RESIZE_S: RfxCursorType = 10;
+    pub const RFX_CURSOR_RESIZE_SW: RfxCursorType = 11;
+    pub const RFX_CURSOR_RESIZE_W: RfxCursorType = 12;
+    pub const RFX_CURSOR_WAIT: RfxCursorType = 13;
+    pub const RFX_CURSOR_PROGRESS: RfxCursorType = 14;
+    pub const RFX_CURSOR_COUNT: RfxCursorType = 15;
+    pub const RFX_KEY_SPACE: u32 = 32;
+    pub const RFX_KEY_APOSTROPHE: u32 = 39;
+    pub const RFX_KEY_COMMA: u32 = 44;
+    pub const RFX_KEY_MINUS: u32 = 45;
+    pub const RFX_KEY_PERIOD: u32 = 46;
+    pub const RFX_KEY_SLASH: u32 = 47;
+    pub const RFX_KEY_0: u32 = 48;
+    pub const RFX_KEY_1: u32 = 49;
+    pub const RFX_KEY_2: u32 = 50;
+    pub const RFX_KEY_3: u32 = 51;
+    pub const RFX_KEY_4: u32 = 52;
+    pub const RFX_KEY_5: u32 = 53;
+    pub const RFX_KEY_6: u32 = 54;
+    pub const RFX_KEY_7: u32 = 55;
+    pub const RFX_KEY_8: u32 = 56;
+    pub const RFX_KEY_9: u32 = 57;
+    pub const RFX_KEY_SEMICOLON: u32 = 59;
+    pub const RFX_KEY_EQUAL: u32 = 61;
+    pub const RFX_KEY_A: u32 = 65;
+    pub const RFX_KEY_B: u32 = 66;
+    pub const RFX_KEY_C: u32 = 67;
+    pub const RFX_KEY_D: u32 = 68;
+    pub const RFX_KEY_E: u32 = 69;
+    pub const RFX_KEY_F: u32 = 70;
+    pub const RFX_KEY_G: u32 = 71;
+    pub const RFX_KEY_H: u32 = 72;
+    pub const RFX_KEY_I: u32 = 73;
+    pub const RFX_KEY_J: u32 = 74;
+    pub const RFX_KEY_K: u32 = 75;
+    pub const RFX_KEY_L: u32 = 76;
+    pub const RFX_KEY_M: u32 = 77;
+    pub const RFX_KEY_N: u32 = 78;
+    pub const RFX_KEY_O: u32 = 79;
+    pub const RFX_KEY_P: u32 = 80;
+    pub const RFX_KEY_Q: u32 = 81;
+    pub const RFX_KEY_R: u32 = 82;
+    pub const RFX_KEY_S: u32 = 83;
+    pub const RFX_KEY_T: u32 = 84;
+    pub const RFX_KEY_U: u32 = 85;
+    pub const RFX_KEY_V: u32 = 86;
+    pub const RFX_KEY_W: u32 = 87;
+    pub const RFX_KEY_X: u32 = 88;
+    pub const RFX_KEY_Y: u32 = 89;
+    pub const RFX_KEY_Z: u32 = 90;
+    pub const RFX_KEY_LEFT_BRACKET: u32 = 91;
+    pub const RFX_KEY_BACKSLASH: u32 = 92;
+    pub const RFX_KEY_RIGHT_BRACKET: u32 = 93;
+    pub const RFX_KEY_GRAVE_ACCENT: u32 = 96;
+    pub const RFX_KEY_ESCAPE: u32 = 256;
+    pub const RFX_KEY_ENTER: u32 = 257;
+    pub const RFX_KEY_TAB: u32 = 258;
+    pub const RFX_KEY_BACKSPACE: u32 = 259;
+    pub const RFX_KEY_INSERT: u32 = 260;
+    pub const RFX_KEY_DELETE: u32 = 261;
+    pub const RFX_KEY_RIGHT: u32 = 262;
+    pub const RFX_KEY_LEFT: u32 = 263;
+    pub const RFX_KEY_DOWN: u32 = 264;
+    pub const RFX_KEY_UP: u32 = 265;
+    pub const RFX_KEY_PAGE_UP: u32 = 266;
+    pub const RFX_KEY_PAGE_DOWN: u32 = 267;
+    pub const RFX_KEY_HOME: u32 = 268;
+    pub const RFX_KEY_END: u32 = 269;
+    pub const RFX_KEY_CAPS_LOCK: u32 = 280;
+    pub const RFX_KEY_SCROLL_LOCK: u32 = 281;
+    pub const RFX_KEY_NUM_LOCK: u32 = 282;
+    pub const RFX_KEY_PRINT_SCREEN: u32 = 283;
+    pub const RFX_KEY_PAUSE: u32 = 284;
+    pub const RFX_KEY_F1: u32 = 290;
+    pub const RFX_KEY_F2: u32 = 291;
+    pub const RFX_KEY_F3: u32 = 292;
+    pub const RFX_KEY_F4: u32 = 293;
+    pub const RFX_KEY_F5: u32 = 294;
+    pub const RFX_KEY_F6: u32 = 295;
+    pub const RFX_KEY_F7: u32 = 296;
+    pub const RFX_KEY_F8: u32 = 297;
+    pub const RFX_KEY_F9: u32 = 298;
+    pub const RFX_KEY_F10: u32 = 299;
+    pub const RFX_KEY_F11: u32 = 300;
+    pub const RFX_KEY_F12: u32 = 301;
+    pub const RFX_KEY_LEFT_SHIFT: u32 = 340;
+    pub const RFX_KEY_LEFT_CONTROL: u32 = 341;
+    pub const RFX_KEY_LEFT_ALT: u32 = 342;
+    pub const RFX_KEY_LEFT_SUPER: u32 = 343;
+    pub const RFX_KEY_RIGHT_SHIFT: u32 = 344;
+    pub const RFX_KEY_RIGHT_CONTROL: u32 = 345;
+    pub const RFX_KEY_RIGHT_ALT: u32 = 346;
+    pub const RFX_KEY_RIGHT_SUPER: u32 = 347;
+    pub const RFX_KEY_MENU: u32 = 348;
+    pub type RfxKey = u32;
+    pub const RFX_KEY_SPACE: RfxKey = 32;
+    pub const RFX_KEY_APOSTROPHE: RfxKey = 39;
+    pub const RFX_KEY_COMMA: RfxKey = 44;
+    pub const RFX_KEY_MINUS: RfxKey = 45;
+    pub const RFX_KEY_PERIOD: RfxKey = 46;
+    pub const RFX_KEY_SLASH: RfxKey = 47;
+    pub const RFX_KEY_0: RfxKey = 48;
+    pub const RFX_KEY_1: RfxKey = 49;
+    pub const RFX_KEY_2: RfxKey = 50;
+    pub const RFX_KEY_3: RfxKey = 51;
+    pub const RFX_KEY_4: RfxKey = 52;
+    pub const RFX_KEY_5: RfxKey = 53;
+    pub const RFX_KEY_6: RfxKey = 54;
+    pub const RFX_KEY_7: RfxKey = 55;
+    pub const RFX_KEY_8: RfxKey = 56;
+    pub const RFX_KEY_9: RfxKey = 57;
+    pub const RFX_KEY_SEMICOLON: RfxKey = 59;
+    pub const RFX_KEY_EQUAL: RfxKey = 61;
+    pub const RFX_KEY_A: RfxKey = 65;
+    pub const RFX_KEY_B: RfxKey = 66;
+    pub const RFX_KEY_C: RfxKey = 67;
+    pub const RFX_KEY_D: RfxKey = 68;
+    pub const RFX_KEY_E: RfxKey = 69;
+    pub const RFX_KEY_F: RfxKey = 70;
+    pub const RFX_KEY_G: RfxKey = 71;
+    pub const RFX_KEY_H: RfxKey = 72;
+    pub const RFX_KEY_I: RfxKey = 73;
+    pub const RFX_KEY_J: RfxKey = 74;
+    pub const RFX_KEY_K: RfxKey = 75;
+    pub const RFX_KEY_L: RfxKey = 76;
+    pub const RFX_KEY_M: RfxKey = 77;
+    pub const RFX_KEY_N: RfxKey = 78;
+    pub const RFX_KEY_O: RfxKey = 79;
+    pub const RFX_KEY_P: RfxKey = 80;
+    pub const RFX_KEY_Q: RfxKey = 81;
+    pub const RFX_KEY_R: RfxKey = 82;
+    pub const RFX_KEY_S: RfxKey = 83;
+    pub const RFX_KEY_T: RfxKey = 84;
+    pub const RFX_KEY_U: RfxKey = 85;
+    pub const RFX_KEY_V: RfxKey = 86;
+    pub const RFX_KEY_W: RfxKey = 87;
+    pub const RFX_KEY_X: RfxKey = 88;
+    pub const RFX_KEY_Y: RfxKey = 89;
+    pub const RFX_KEY_Z: RfxKey = 90;
+    pub const RFX_KEY_LEFT_BRACKET: RfxKey = 91;
+    pub const RFX_KEY_BACKSLASH: RfxKey = 92;
+    pub const RFX_KEY_RIGHT_BRACKET: RfxKey = 93;
+    pub const RFX_KEY_GRAVE_ACCENT: RfxKey = 96;
+    pub const RFX_KEY_ESCAPE: RfxKey = 256;
+    pub const RFX_KEY_ENTER: RfxKey = 257;
+    pub const RFX_KEY_TAB: RfxKey = 258;
+    pub const RFX_KEY_BACKSPACE: RfxKey = 259;
+    pub const RFX_KEY_INSERT: RfxKey = 260;
+    pub const RFX_KEY_DELETE: RfxKey = 261;
+    pub const RFX_KEY_RIGHT: RfxKey = 262;
+    pub const RFX_KEY_LEFT: RfxKey = 263;
+    pub const RFX_KEY_DOWN: RfxKey = 264;
+    pub const RFX_KEY_UP: RfxKey = 265;
+    pub const RFX_KEY_PAGE_UP: RfxKey = 266;
+    pub const RFX_KEY_PAGE_DOWN: RfxKey = 267;
+    pub const RFX_KEY_HOME: RfxKey = 268;
+    pub const RFX_KEY_END: RfxKey = 269;
+    pub const RFX_KEY_CAPS_LOCK: RfxKey = 280;
+    pub const RFX_KEY_SCROLL_LOCK: RfxKey = 281;
+    pub const RFX_KEY_NUM_LOCK: RfxKey = 282;
+    pub const RFX_KEY_PRINT_SCREEN: RfxKey = 283;
+    pub const RFX_KEY_PAUSE: RfxKey = 284;
+    pub const RFX_KEY_F1: RfxKey = 290;
+    pub const RFX_KEY_F2: RfxKey = 291;
+    pub const RFX_KEY_F3: RfxKey = 292;
+    pub const RFX_KEY_F4: RfxKey = 293;
+    pub const RFX_KEY_F5: RfxKey = 294;
+    pub const RFX_KEY_F6: RfxKey = 295;
+    pub const RFX_KEY_F7: RfxKey = 296;
+    pub const RFX_KEY_F8: RfxKey = 297;
+    pub const RFX_KEY_F9: RfxKey = 298;
+    pub const RFX_KEY_F10: RfxKey = 299;
+    pub const RFX_KEY_F11: RfxKey = 300;
+    pub const RFX_KEY_F12: RfxKey = 301;
+    pub const RFX_KEY_LEFT_SHIFT: RfxKey = 340;
+    pub const RFX_KEY_LEFT_CONTROL: RfxKey = 341;
+    pub const RFX_KEY_LEFT_ALT: RfxKey = 342;
+    pub const RFX_KEY_LEFT_SUPER: RfxKey = 343;
+    pub const RFX_KEY_RIGHT_SHIFT: RfxKey = 344;
+    pub const RFX_KEY_RIGHT_CONTROL: RfxKey = 345;
+    pub const RFX_KEY_RIGHT_ALT: RfxKey = 346;
+    pub const RFX_KEY_RIGHT_SUPER: RfxKey = 347;
+    pub const RFX_KEY_MENU: RfxKey = 348;
     #[repr(C)]
     #[derive(Debug, Copy, Clone)]
     pub struct RfxColor {
@@ -775,6 +1125,25 @@ pub mod sys {
         pub hdrScale: f32,
         pub linearColor: bool,
     }
+    pub type __vcrt_bool = bool;
+    pub type int_least8_t = i8;
+    pub type int_least16_t = i16;
+    pub type int_least32_t = i32;
+    pub type int_least64_t = i64;
+    pub type uint_least8_t = u8;
+    pub type uint_least16_t = u16;
+    pub type uint_least32_t = u32;
+    pub type uint_least64_t = u64;
+    pub type int_fast8_t = i8;
+    pub type int_fast16_t = i32;
+    pub type int_fast32_t = i32;
+    pub type int_fast64_t = i64;
+    pub type uint_fast8_t = u8;
+    pub type uint_fast16_t = u32;
+    pub type uint_fast32_t = u32;
+    pub type uint_fast64_t = u64;
+    pub type intmax_t = i64;
+    pub type uintmax_t = u64;
     pub type RfxBuffer = *mut RfxBufferImpl;
     pub type RfxTexture = *mut RfxTextureImpl;
     pub type RfxShader = *mut RfxShaderImpl;
@@ -788,47 +1157,19 @@ pub mod sys {
     pub type RfxUpscaler = *mut RfxUpscalerImpl;
     pub type RfxFence = *mut RfxFenceImpl;
     pub type RfxQueryPool = *mut RfxQueryPoolImpl;
-    pub type RfxFilter = u32;
-    pub type RfxAddressMode = u32;
-    pub type RfxTopology = u32;
     pub type RfxBufferUsageFlags = u32;
-    pub type RfxResourceState = u32;
-    pub type RfxMemoryType = u32;
-    pub type RfxFormat = u32;
-    pub type RfxBlendFactor = u32;
-    pub type RfxBlendOp = u32;
     pub type RfxColorWriteMask = u8;
-    pub type RfxQueryType = u32;
-    pub type RfxCullMode = u32;
-    pub type RfxDenoiserType = u32;
-    pub type RfxDenoiserResourceId = u32;
-    pub type RfxStencilOp = u32;
-    pub type RfxCompareOp = u32;
-    pub type RfxShadingRate = u32;
-    pub type RfxShadingRateCombiner = u32;
     pub type RfxUpscaleDispatchFlags = u32;
-    pub type RfxIndexType = u32;
-    pub type RfxAccelerationStructureType = u32;
     pub type RfxBuildASFlags = u32;
     pub type RfxInstanceFlags = u32;
     pub type RfxRayTracingPipelineFlags = u32;
-    pub type RfxShaderGroupType = u32;
     pub type RfxTextureUsageFlags = u8;
-    pub type RfxMicromapFormat = u32;
     pub type RfxBuildMicromapFlags = u32;
-    pub type RfxUpscalerType = u32;
-    pub type RfxUpscalerMode = u32;
     pub type RfxUpscalerFlags = u32;
     pub type RfxBackend = u8;
-    pub type RfxQueueType = u32;
-    pub type RfxResolveOp = u32;
-    pub type RfxCopyMode = u32;
-    pub type RfxLatencyMarker = u32;
     pub type RfxMouseButton = u8;
     pub type RfxWindowFlags = u32;
     pub type RfxFeatureSupportFlags = u32;
-    pub type RfxCursorType = u32;
-    pub type RfxKey = u32;
 
     unsafe extern "C" {
         pub fn rfxRequestBackend(backend: RfxBackend, enableValidation: bool);
@@ -1181,51 +1522,618 @@ pub mod sys {
 //
 // Typedefs
 //
-pub type Filter = sys::RfxFilter;
-pub type AddressMode = sys::RfxAddressMode;
-pub type Topology = sys::RfxTopology;
-pub type BufferUsageFlags = sys::RfxBufferUsageFlags;
-pub type ResourceState = sys::RfxResourceState;
-pub type MemoryType = sys::RfxMemoryType;
-pub type Format = sys::RfxFormat;
-pub type BlendFactor = sys::RfxBlendFactor;
-pub type BlendOp = sys::RfxBlendOp;
-pub type ColorWriteMask = sys::RfxColorWriteMask;
-pub type QueryType = sys::RfxQueryType;
-pub type CullMode = sys::RfxCullMode;
-pub type DenoiserType = sys::RfxDenoiserType;
-pub type DenoiserResourceId = sys::RfxDenoiserResourceId;
-pub type StencilOp = sys::RfxStencilOp;
-pub type CompareOp = sys::RfxCompareOp;
-pub type ShadingRate = sys::RfxShadingRate;
-pub type ShadingRateCombiner = sys::RfxShadingRateCombiner;
-pub type UpscaleDispatchFlags = sys::RfxUpscaleDispatchFlags;
-pub type IndexType = sys::RfxIndexType;
-pub type AccelerationStructureType = sys::RfxAccelerationStructureType;
-pub type BuildASFlags = sys::RfxBuildASFlags;
-pub type InstanceFlags = sys::RfxInstanceFlags;
-pub type RayTracingPipelineFlags = sys::RfxRayTracingPipelineFlags;
-pub type ShaderGroupType = sys::RfxShaderGroupType;
-pub type TextureUsageFlags = sys::RfxTextureUsageFlags;
-pub type MicromapFormat = sys::RfxMicromapFormat;
-pub type BuildMicromapFlags = sys::RfxBuildMicromapFlags;
-pub type UpscalerType = sys::RfxUpscalerType;
-pub type UpscalerMode = sys::RfxUpscalerMode;
-pub type UpscalerFlags = sys::RfxUpscalerFlags;
-pub type Backend = sys::RfxBackend;
-pub type QueueType = sys::RfxQueueType;
-pub type ResolveOp = sys::RfxResolveOp;
-pub type CopyMode = sys::RfxCopyMode;
-pub type LatencyMarker = sys::RfxLatencyMarker;
-pub type MouseButton = sys::RfxMouseButton;
-pub type WindowFlags = sys::RfxWindowFlags;
-pub type FeatureSupportFlags = sys::RfxFeatureSupportFlags;
-pub type CursorType = sys::RfxCursorType;
-pub type Key = sys::RfxKey;
+pub type __vcrt_bool = sys::__vcrt_bool;
+pub type int_least8_t = sys::int_least8_t;
+pub type int_least16_t = sys::int_least16_t;
+pub type int_least32_t = sys::int_least32_t;
+pub type int_least64_t = sys::int_least64_t;
+pub type uint_least8_t = sys::uint_least8_t;
+pub type uint_least16_t = sys::uint_least16_t;
+pub type uint_least32_t = sys::uint_least32_t;
+pub type uint_least64_t = sys::uint_least64_t;
+pub type int_fast8_t = sys::int_fast8_t;
+pub type int_fast16_t = sys::int_fast16_t;
+pub type int_fast32_t = sys::int_fast32_t;
+pub type int_fast64_t = sys::int_fast64_t;
+pub type uint_fast8_t = sys::uint_fast8_t;
+pub type uint_fast16_t = sys::uint_fast16_t;
+pub type uint_fast32_t = sys::uint_fast32_t;
+pub type uint_fast64_t = sys::uint_fast64_t;
+pub type intmax_t = sys::intmax_t;
+pub type uintmax_t = sys::uintmax_t;
 
 //
 // Enums
 //
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum Filter {
+    Nearest = sys::RFX_FILTER_NEAREST as u32,
+    Linear = sys::RFX_FILTER_LINEAR as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum AddressMode {
+    Repeat = sys::RFX_WRAP_REPEAT as u32,
+    Clamp = sys::RFX_WRAP_CLAMP as u32,
+    Mirror = sys::RFX_WRAP_MIRROR as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum Topology {
+    TriangleList = sys::RFX_TOPOLOGY_TRIANGLE_LIST as u32,
+    TriangleStrip = sys::RFX_TOPOLOGY_TRIANGLE_STRIP as u32,
+    PointList = sys::RFX_TOPOLOGY_POINT_LIST as u32,
+    LineList = sys::RFX_TOPOLOGY_LINE_LIST as u32,
+    LineStrip = sys::RFX_TOPOLOGY_LINE_STRIP as u32,
+    LineListWithAdjacency = sys::RFX_TOPOLOGY_LINE_LIST_WITH_ADJACENCY as u32,
+    LineStripWithAdjacency = sys::RFX_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY as u32,
+    TriangleListWithAdjacency = sys::RFX_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY as u32,
+    TriangleStripWithAdjacency = sys::RFX_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY as u32,
+    PatchList = sys::RFX_TOPOLOGY_PATCH_LIST as u32,
+}
+
+bitflags::bitflags! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct BufferUsageFlags: u32 {
+        const SHADER_RESOURCE = sys::RFX_USAGE_SHADER_RESOURCE;
+        const SHADER_RESOURCE_STORAGE = sys::RFX_USAGE_SHADER_RESOURCE_STORAGE;
+        const VERTEX_BUFFER = sys::RFX_USAGE_VERTEX_BUFFER;
+        const INDEX_BUFFER = sys::RFX_USAGE_INDEX_BUFFER;
+        const CONSTANT_BUFFER = sys::RFX_USAGE_CONSTANT_BUFFER;
+        const ARGUMENT_BUFFER = sys::RFX_USAGE_ARGUMENT_BUFFER;
+        const SCRATCH_BUFFER = sys::RFX_USAGE_SCRATCH_BUFFER;
+        const SHADER_BINDING_TABLE = sys::RFX_USAGE_SHADER_BINDING_TABLE;
+        const ACCELERATION_STRUCTURE_BUILD_INPUT = sys::RFX_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT;
+        const MICROMAP_BUILD_INPUT = sys::RFX_USAGE_MICROMAP_BUILD_INPUT;
+        const TRANSFER_SRC = sys::RFX_USAGE_TRANSFER_SRC;
+        const TRANSFER_DST = sys::RFX_USAGE_TRANSFER_DST;
+    }
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum ResourceState {
+    Undefined = sys::RFX_STATE_UNDEFINED as u32,
+    Present = sys::RFX_STATE_PRESENT as u32,
+    CopySrc = sys::RFX_STATE_COPY_SRC as u32,
+    CopyDst = sys::RFX_STATE_COPY_DST as u32,
+    VertexBuffer = sys::RFX_STATE_VERTEX_BUFFER as u32,
+    IndexBuffer = sys::RFX_STATE_INDEX_BUFFER as u32,
+    IndirectArgument = sys::RFX_STATE_INDIRECT_ARGUMENT as u32,
+    ShaderRead = sys::RFX_STATE_SHADER_READ as u32,
+    ShaderWrite = sys::RFX_STATE_SHADER_WRITE as u32,
+    RenderTarget = sys::RFX_STATE_RENDER_TARGET as u32,
+    DepthRead = sys::RFX_STATE_DEPTH_READ as u32,
+    DepthWrite = sys::RFX_STATE_DEPTH_WRITE as u32,
+    ScratchBuffer = sys::RFX_STATE_SCRATCH_BUFFER as u32,
+    ResolveSrc = sys::RFX_STATE_RESOLVE_SRC as u32,
+    ResolveDst = sys::RFX_STATE_RESOLVE_DST as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum MemoryType {
+    GpuOnly = sys::RFX_MEM_GPU_ONLY as u32,
+    CpuToGpu = sys::RFX_MEM_CPU_TO_GPU as u32,
+    GpuToCpu = sys::RFX_MEM_GPU_TO_CPU as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum Format {
+    Unknown = sys::RFX_FORMAT_UNKNOWN as u32,
+    Rgba8Unorm = sys::RFX_FORMAT_RGBA8_UNORM as u32,
+    Rgba8Srgb = sys::RFX_FORMAT_RGBA8_SRGB as u32,
+    Bgra8Unorm = sys::RFX_FORMAT_BGRA8_UNORM as u32,
+    Bgra8Srgb = sys::RFX_FORMAT_BGRA8_SRGB as u32,
+    R8Uint = sys::RFX_FORMAT_R8_UINT as u32,
+    R8Sint = sys::RFX_FORMAT_R8_SINT as u32,
+    Rg8Uint = sys::RFX_FORMAT_RG8_UINT as u32,
+    Rg8Sint = sys::RFX_FORMAT_RG8_SINT as u32,
+    Rgba8Uint = sys::RFX_FORMAT_RGBA8_UINT as u32,
+    Rgba8Sint = sys::RFX_FORMAT_RGBA8_SINT as u32,
+    R16Uint = sys::RFX_FORMAT_R16_UINT as u32,
+    R16Sint = sys::RFX_FORMAT_R16_SINT as u32,
+    R16Unorm = sys::RFX_FORMAT_R16_UNORM as u32,
+    R16Snorm = sys::RFX_FORMAT_R16_SNORM as u32,
+    Rg16Uint = sys::RFX_FORMAT_RG16_UINT as u32,
+    Rg16Sint = sys::RFX_FORMAT_RG16_SINT as u32,
+    Rg16Unorm = sys::RFX_FORMAT_RG16_UNORM as u32,
+    Rg16Snorm = sys::RFX_FORMAT_RG16_SNORM as u32,
+    Rgba16Uint = sys::RFX_FORMAT_RGBA16_UINT as u32,
+    Rgba16Sint = sys::RFX_FORMAT_RGBA16_SINT as u32,
+    Rgba16Unorm = sys::RFX_FORMAT_RGBA16_UNORM as u32,
+    Rgba16Snorm = sys::RFX_FORMAT_RGBA16_SNORM as u32,
+    R32Uint = sys::RFX_FORMAT_R32_UINT as u32,
+    R32Sint = sys::RFX_FORMAT_R32_SINT as u32,
+    Rg32Uint = sys::RFX_FORMAT_RG32_UINT as u32,
+    Rg32Sint = sys::RFX_FORMAT_RG32_SINT as u32,
+    Rgb32Uint = sys::RFX_FORMAT_RGB32_UINT as u32,
+    Rgb32Sint = sys::RFX_FORMAT_RGB32_SINT as u32,
+    Rgba32Uint = sys::RFX_FORMAT_RGBA32_UINT as u32,
+    Rgba32Sint = sys::RFX_FORMAT_RGBA32_SINT as u32,
+    R10G10B10A2Unorm = sys::RFX_FORMAT_R10_G10_B10_A2_UNORM as u32,
+    R10G10B10A2Uint = sys::RFX_FORMAT_R10_G10_B10_A2_UINT as u32,
+    R11G11B10Ufloat = sys::RFX_FORMAT_R11_G11_B10_UFLOAT as u32,
+    R9G9B9E5Ufloat = sys::RFX_FORMAT_R9_G9_B9_E5_UFLOAT as u32,
+    Bc1RgbaUnorm = sys::RFX_FORMAT_BC1_RGBA_UNORM as u32,
+    Bc1RgbaSrgb = sys::RFX_FORMAT_BC1_RGBA_SRGB as u32,
+    Bc2RgbaUnorm = sys::RFX_FORMAT_BC2_RGBA_UNORM as u32,
+    Bc2RgbaSrgb = sys::RFX_FORMAT_BC2_RGBA_SRGB as u32,
+    Bc3RgbaUnorm = sys::RFX_FORMAT_BC3_RGBA_UNORM as u32,
+    Bc3RgbaSrgb = sys::RFX_FORMAT_BC3_RGBA_SRGB as u32,
+    Bc4RUnorm = sys::RFX_FORMAT_BC4_R_UNORM as u32,
+    Bc4RSnorm = sys::RFX_FORMAT_BC4_R_SNORM as u32,
+    Bc5RgUnorm = sys::RFX_FORMAT_BC5_RG_UNORM as u32,
+    Bc5RgSnorm = sys::RFX_FORMAT_BC5_RG_SNORM as u32,
+    Bc6HRgbUfloat = sys::RFX_FORMAT_BC6H_RGB_UFLOAT as u32,
+    Bc6HRgbSfloat = sys::RFX_FORMAT_BC6H_RGB_SFLOAT as u32,
+    Bc7RgbaUnorm = sys::RFX_FORMAT_BC7_RGBA_UNORM as u32,
+    Bc7RgbaSrgb = sys::RFX_FORMAT_BC7_RGBA_SRGB as u32,
+    D16Unorm = sys::RFX_FORMAT_D16_UNORM as u32,
+    D24UnormS8Uint = sys::RFX_FORMAT_D24_UNORM_S8_UINT as u32,
+    D32Float = sys::RFX_FORMAT_D32_FLOAT as u32,
+    D32FloatS8UintX24 = sys::RFX_FORMAT_D32_FLOAT_S8_UINT_X24 as u32,
+    R32Float = sys::RFX_FORMAT_R32_FLOAT as u32,
+    Rg32Float = sys::RFX_FORMAT_RG32_FLOAT as u32,
+    Rgb32Float = sys::RFX_FORMAT_RGB32_FLOAT as u32,
+    Rgba32Float = sys::RFX_FORMAT_RGBA32_FLOAT as u32,
+    Rgba16Float = sys::RFX_FORMAT_RGBA16_FLOAT as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum BlendFactor {
+    Zero = sys::RFX_BLEND_FACTOR_ZERO as u32,
+    One = sys::RFX_BLEND_FACTOR_ONE as u32,
+    SrcColor = sys::RFX_BLEND_FACTOR_SRC_COLOR as u32,
+    OneMinusSrcColor = sys::RFX_BLEND_FACTOR_ONE_MINUS_SRC_COLOR as u32,
+    DstColor = sys::RFX_BLEND_FACTOR_DST_COLOR as u32,
+    OneMinusDstColor = sys::RFX_BLEND_FACTOR_ONE_MINUS_DST_COLOR as u32,
+    SrcAlpha = sys::RFX_BLEND_FACTOR_SRC_ALPHA as u32,
+    OneMinusSrcAlpha = sys::RFX_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA as u32,
+    DstAlpha = sys::RFX_BLEND_FACTOR_DST_ALPHA as u32,
+    OneMinusDstAlpha = sys::RFX_BLEND_FACTOR_ONE_MINUS_DST_ALPHA as u32,
+    ConstantColor = sys::RFX_BLEND_FACTOR_CONSTANT_COLOR as u32,
+    OneMinusConstantColor = sys::RFX_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR as u32,
+    ConstantAlpha = sys::RFX_BLEND_FACTOR_CONSTANT_ALPHA as u32,
+    OneMinusConstantAlpha = sys::RFX_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA as u32,
+    SrcAlphaSaturate = sys::RFX_BLEND_FACTOR_SRC_ALPHA_SATURATE as u32,
+    Src1Color = sys::RFX_BLEND_FACTOR_SRC1_COLOR as u32,
+    OneMinusSrc1Color = sys::RFX_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR as u32,
+    Src1Alpha = sys::RFX_BLEND_FACTOR_SRC1_ALPHA as u32,
+    OneMinusSrc1Alpha = sys::RFX_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum BlendOp {
+    Add = sys::RFX_BLEND_OP_ADD as u32,
+    Subtract = sys::RFX_BLEND_OP_SUBTRACT as u32,
+    ReverseSubtract = sys::RFX_BLEND_OP_REVERSE_SUBTRACT as u32,
+    Min = sys::RFX_BLEND_OP_MIN as u32,
+    Max = sys::RFX_BLEND_OP_MAX as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum ColorWriteMask {
+    Red = sys::RFX_COLOR_WRITE_RED as u32,
+    Green = sys::RFX_COLOR_WRITE_GREEN as u32,
+    Blue = sys::RFX_COLOR_WRITE_BLUE as u32,
+    Alpha = sys::RFX_COLOR_WRITE_ALPHA as u32,
+    All = sys::RFX_COLOR_WRITE_ALL as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum QueryType {
+    Timestamp = sys::RFX_QUERY_TYPE_TIMESTAMP as u32,
+    Occlusion = sys::RFX_QUERY_TYPE_OCCLUSION as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum CullMode {
+    None_ = sys::RFX_CULL_NONE as u32,
+    Back = sys::RFX_CULL_BACK as u32,
+    Front = sys::RFX_CULL_FRONT as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum DenoiserType {
+    ReblurDiffuse = sys::RFX_DENOISER_REBLUR_DIFFUSE as u32,
+    ReblurDiffuseSpecular = sys::RFX_DENOISER_REBLUR_DIFFUSE_SPECULAR as u32,
+    RelaxDiffuse = sys::RFX_DENOISER_RELAX_DIFFUSE as u32,
+    RelaxDiffuseSpecular = sys::RFX_DENOISER_RELAX_DIFFUSE_SPECULAR as u32,
+    SigmaShadow = sys::RFX_DENOISER_SIGMA_SHADOW as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum DenoiserResourceId {
+    InViewz = sys::RFX_DENOISER_IN_VIEWZ as u32,
+    InMv = sys::RFX_DENOISER_IN_MV as u32,
+    InNormalRoughness = sys::RFX_DENOISER_IN_NORMAL_ROUGHNESS as u32,
+    InDiffRadiance = sys::RFX_DENOISER_IN_DIFF_RADIANCE as u32,
+    InSpecRadiance = sys::RFX_DENOISER_IN_SPEC_RADIANCE as u32,
+    InShadowData = sys::RFX_DENOISER_IN_SHADOW_DATA as u32,
+    OutDiffRadiance = sys::RFX_DENOISER_OUT_DIFF_RADIANCE as u32,
+    OutSpecRadiance = sys::RFX_DENOISER_OUT_SPEC_RADIANCE as u32,
+    OutShadow = sys::RFX_DENOISER_OUT_SHADOW as u32,
+    OutValidation = sys::RFX_DENOISER_OUT_VALIDATION as u32,
+    ResourceCount = sys::RFX_DENOISER_RESOURCE_COUNT as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum StencilOp {
+    Keep = sys::RFX_STENCIL_OP_KEEP as u32,
+    Zero = sys::RFX_STENCIL_OP_ZERO as u32,
+    Replace = sys::RFX_STENCIL_OP_REPLACE as u32,
+    IncrementAndClamp = sys::RFX_STENCIL_OP_INCREMENT_AND_CLAMP as u32,
+    DecrementAndClamp = sys::RFX_STENCIL_OP_DECREMENT_AND_CLAMP as u32,
+    Invert = sys::RFX_STENCIL_OP_INVERT as u32,
+    IncrementAndWrap = sys::RFX_STENCIL_OP_INCREMENT_AND_WRAP as u32,
+    DecrementAndWrap = sys::RFX_STENCIL_OP_DECREMENT_AND_WRAP as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum CompareOp {
+    Never = sys::RFX_COMPARE_NEVER as u32,
+    Less = sys::RFX_COMPARE_LESS as u32,
+    Equal = sys::RFX_COMPARE_EQUAL as u32,
+    LessEqual = sys::RFX_COMPARE_LESS_EQUAL as u32,
+    Greater = sys::RFX_COMPARE_GREATER as u32,
+    NotEqual = sys::RFX_COMPARE_NOT_EQUAL as u32,
+    GreaterEqual = sys::RFX_COMPARE_GREATER_EQUAL as u32,
+    Always = sys::RFX_COMPARE_ALWAYS as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum ShadingRate {
+    V1X1 = sys::RFX_SHADING_RATE_1X1 as u32,
+    V1X2 = sys::RFX_SHADING_RATE_1X2 as u32,
+    V2X1 = sys::RFX_SHADING_RATE_2X1 as u32,
+    V2X2 = sys::RFX_SHADING_RATE_2X2 as u32,
+    V2X4 = sys::RFX_SHADING_RATE_2X4 as u32,
+    V4X2 = sys::RFX_SHADING_RATE_4X2 as u32,
+    V4X4 = sys::RFX_SHADING_RATE_4X4 as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum ShadingRateCombiner {
+    Passthrough = sys::RFX_SHADING_RATE_COMBINER_PASSTHROUGH as u32,
+    Override = sys::RFX_SHADING_RATE_COMBINER_OVERRIDE as u32,
+    Min = sys::RFX_SHADING_RATE_COMBINER_MIN as u32,
+    Max = sys::RFX_SHADING_RATE_COMBINER_MAX as u32,
+    Sum = sys::RFX_SHADING_RATE_COMBINER_SUM as u32,
+}
+
+bitflags::bitflags! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct UpscaleDispatchFlags: u32 {
+        const NONE = sys::RFX_UPSCALE_DISPATCH_NONE;
+        const RESET_HISTORY = sys::RFX_UPSCALE_DISPATCH_RESET_HISTORY;
+        const USE_SPECULAR_MOTION = sys::RFX_UPSCALE_DISPATCH_USE_SPECULAR_MOTION;
+    }
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum IndexType {
+    Uint16 = sys::RFX_INDEX_UINT16 as u32,
+    Uint32 = sys::RFX_INDEX_UINT32 as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum AccelerationStructureType {
+    TopLevel = sys::RFX_AS_TOP_LEVEL as u32,
+    BottomLevel = sys::RFX_AS_BOTTOM_LEVEL as u32,
+}
+
+bitflags::bitflags! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct BuildASFlags: u32 {
+        const NONE = sys::RFX_BUILD_AS_NONE;
+        const PREFER_FAST_TRACE = sys::RFX_BUILD_AS_PREFER_FAST_TRACE;
+        const PREFER_FAST_BUILD = sys::RFX_BUILD_AS_PREFER_FAST_BUILD;
+        const ALLOW_UPDATE = sys::RFX_BUILD_AS_ALLOW_UPDATE;
+        const ALLOW_COMPACTION = sys::RFX_BUILD_AS_ALLOW_COMPACTION;
+    }
+}
+
+bitflags::bitflags! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct InstanceFlags: u32 {
+        const NONE = sys::RFX_INSTANCE_NONE;
+        const TRIANGLE_CULL_DISABLE = sys::RFX_INSTANCE_TRIANGLE_CULL_DISABLE;
+        const TRIANGLE_FLIP_FACING = sys::RFX_INSTANCE_TRIANGLE_FLIP_FACING;
+        const FORCE_OPAQUE = sys::RFX_INSTANCE_FORCE_OPAQUE;
+        const FORCE_NON_OPAQUE = sys::RFX_INSTANCE_FORCE_NON_OPAQUE;
+    }
+}
+
+bitflags::bitflags! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct RayTracingPipelineFlags: u32 {
+        const NONE = sys::RFX_RT_PIPELINE_NONE;
+        const SKIP_TRIANGLES = sys::RFX_RT_PIPELINE_SKIP_TRIANGLES;
+        const SKIP_AABBS = sys::RFX_RT_PIPELINE_SKIP_AABBS;
+        const ALLOW_MICROMAPS = sys::RFX_RT_PIPELINE_ALLOW_MICROMAPS;
+    }
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum ShaderGroupType {
+    General = sys::RFX_SHADER_GROUP_GENERAL as u32,
+    Triangles = sys::RFX_SHADER_GROUP_TRIANGLES as u32,
+    Procedural = sys::RFX_SHADER_GROUP_PROCEDURAL as u32,
+}
+
+bitflags::bitflags! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct TextureUsageFlags: u32 {
+        const SHADER_RESOURCE = sys::RFX_TEXTURE_USAGE_SHADER_RESOURCE;
+        const RENDER_TARGET = sys::RFX_TEXTURE_USAGE_RENDER_TARGET;
+        const DEPTH_STENCIL = sys::RFX_TEXTURE_USAGE_DEPTH_STENCIL;
+        const STORAGE = sys::RFX_TEXTURE_USAGE_STORAGE;
+    }
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum MicromapFormat {
+    V2State = sys::RFX_MICROMAP_FORMAT_OPACITY_2_STATE as u32,
+    V4State = sys::RFX_MICROMAP_FORMAT_OPACITY_4_STATE as u32,
+}
+
+bitflags::bitflags! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct BuildMicromapFlags: u32 {
+        const NONE = sys::RFX_BUILD_MICROMAP_NONE;
+        const PREFER_FAST_TRACE = sys::RFX_BUILD_MICROMAP_PREFER_FAST_TRACE;
+        const PREFER_FAST_BUILD = sys::RFX_BUILD_MICROMAP_PREFER_FAST_BUILD;
+        const ALLOW_COMPACTION = sys::RFX_BUILD_MICROMAP_ALLOW_COMPACTION;
+    }
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum UpscalerType {
+    Nis = sys::RFX_UPSCALER_NIS as u32,
+    Fsr = sys::RFX_UPSCALER_FSR as u32,
+    Xess = sys::RFX_UPSCALER_XESS as u32,
+    Dlsr = sys::RFX_UPSCALER_DLSR as u32,
+    Dlrr = sys::RFX_UPSCALER_DLRR as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum UpscalerMode {
+    Native = sys::RFX_UPSCALER_MODE_NATIVE as u32,
+    UltraQuality = sys::RFX_UPSCALER_MODE_ULTRA_QUALITY as u32,
+    Quality = sys::RFX_UPSCALER_MODE_QUALITY as u32,
+    Balanced = sys::RFX_UPSCALER_MODE_BALANCED as u32,
+    Performance = sys::RFX_UPSCALER_MODE_PERFORMANCE as u32,
+    UltraPerformance = sys::RFX_UPSCALER_MODE_ULTRA_PERFORMANCE as u32,
+}
+
+bitflags::bitflags! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct UpscalerFlags: u32 {
+        const NONE = sys::RFX_UPSCALER_NONE;
+        const HDR = sys::RFX_UPSCALER_HDR;
+        const SRGB = sys::RFX_UPSCALER_SRGB;
+        const DEPTH_INVERTED = sys::RFX_UPSCALER_DEPTH_INVERTED;
+        const DEPTH_INFINITE = sys::RFX_UPSCALER_DEPTH_INFINITE;
+        const DEPTH_LINEAR = sys::RFX_UPSCALER_DEPTH_LINEAR;
+        const MV_UPSCALED = sys::RFX_UPSCALER_MV_UPSCALED;
+        const MV_JITTERED = sys::RFX_UPSCALER_MV_JITTERED;
+    }
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum Backend {
+    Default_ = sys::RFX_BACKEND_DEFAULT as u32,
+    Vulkan = sys::RFX_BACKEND_VULKAN as u32,
+    D3D12 = sys::RFX_BACKEND_D3D12 as u32,
+    D3D11 = sys::RFX_BACKEND_D3D11 as u32,
+    None_ = sys::RFX_BACKEND_NONE as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum QueueType {
+    Graphics = sys::RFX_QUEUE_GRAPHICS as u32,
+    Compute = sys::RFX_QUEUE_COMPUTE as u32,
+    Copy = sys::RFX_QUEUE_COPY as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum ResolveOp {
+    Average = sys::RFX_RESOLVE_OP_AVERAGE as u32,
+    Min = sys::RFX_RESOLVE_OP_MIN as u32,
+    Max = sys::RFX_RESOLVE_OP_MAX as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum CopyMode {
+    Clone = sys::RFX_COPY_MODE_CLONE as u32,
+    Compact = sys::RFX_COPY_MODE_COMPACT as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum LatencyMarker {
+    SimulationStart = sys::RFX_LATENCY_MARKER_SIMULATION_START as u32,
+    SimulationEnd = sys::RFX_LATENCY_MARKER_SIMULATION_END as u32,
+    RenderSubmitStart = sys::RFX_LATENCY_MARKER_RENDER_SUBMIT_START as u32,
+    RenderSubmitEnd = sys::RFX_LATENCY_MARKER_RENDER_SUBMIT_END as u32,
+    InputSample = sys::RFX_LATENCY_MARKER_INPUT_SAMPLE as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum MouseButton {
+    Left = sys::RFX_MOUSE_BUTTON_LEFT as u32,
+    Right = sys::RFX_MOUSE_BUTTON_RIGHT as u32,
+    Middle = sys::RFX_MOUSE_BUTTON_MIDDLE as u32,
+}
+
+bitflags::bitflags! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct WindowFlags: u32 {
+        const VSYNC = sys::RFX_WINDOW_VSYNC;
+        const FULLSCREEN = sys::RFX_WINDOW_FULLSCREEN;
+        const BORDERLESS = sys::RFX_WINDOW_BORDERLESS;
+        const ALWAYS_ACTIVE = sys::RFX_WINDOW_ALWAYS_ACTIVE;
+        const NO_RESIZE = sys::RFX_WINDOW_NO_RESIZE;
+        const TRANSPARENT = sys::RFX_WINDOW_TRANSPARENT;
+        const FLOATING = sys::RFX_WINDOW_FLOATING;
+        const MAXIMIZED = sys::RFX_WINDOW_MAXIMIZED;
+        const HIDDEN = sys::RFX_WINDOW_HIDDEN;
+        const CENTERED = sys::RFX_WINDOW_CENTERED;
+        const SCALE_TO_MONITOR = sys::RFX_WINDOW_SCALE_TO_MONITOR;
+    }
+}
+
+bitflags::bitflags! {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct FeatureSupportFlags: u32 {
+        const MESH_SHADER = sys::RFX_FEATURE_MESH_SHADER;
+        const RAY_TRACING = sys::RFX_FEATURE_RAY_TRACING;
+        const UPSCALE = sys::RFX_FEATURE_UPSCALE;
+        const LOW_LATENCY = sys::RFX_FEATURE_LOW_LATENCY;
+    }
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum CursorType {
+    Default_ = sys::RFX_CURSOR_DEFAULT as u32,
+    Arrow = sys::RFX_CURSOR_ARROW as u32,
+    Ibeam = sys::RFX_CURSOR_IBEAM as u32,
+    Crosshair = sys::RFX_CURSOR_CROSSHAIR as u32,
+    Hand = sys::RFX_CURSOR_HAND as u32,
+    ResizeEw = sys::RFX_CURSOR_RESIZE_EW as u32,
+    ResizeN = sys::RFX_CURSOR_RESIZE_N as u32,
+    ResizeNe = sys::RFX_CURSOR_RESIZE_NE as u32,
+    ResizeE = sys::RFX_CURSOR_RESIZE_E as u32,
+    ResizeSe = sys::RFX_CURSOR_RESIZE_SE as u32,
+    ResizeS = sys::RFX_CURSOR_RESIZE_S as u32,
+    ResizeSw = sys::RFX_CURSOR_RESIZE_SW as u32,
+    ResizeW = sys::RFX_CURSOR_RESIZE_W as u32,
+    Wait = sys::RFX_CURSOR_WAIT as u32,
+    Progress = sys::RFX_CURSOR_PROGRESS as u32,
+    Count = sys::RFX_CURSOR_COUNT as u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum Key {
+    Space = sys::RFX_KEY_SPACE as u32,
+    Apostrophe = sys::RFX_KEY_APOSTROPHE as u32,
+    Comma = sys::RFX_KEY_COMMA as u32,
+    Minus = sys::RFX_KEY_MINUS as u32,
+    Period = sys::RFX_KEY_PERIOD as u32,
+    Slash = sys::RFX_KEY_SLASH as u32,
+    V0 = sys::RFX_KEY_0 as u32,
+    V1 = sys::RFX_KEY_1 as u32,
+    V2 = sys::RFX_KEY_2 as u32,
+    V3 = sys::RFX_KEY_3 as u32,
+    V4 = sys::RFX_KEY_4 as u32,
+    V5 = sys::RFX_KEY_5 as u32,
+    V6 = sys::RFX_KEY_6 as u32,
+    V7 = sys::RFX_KEY_7 as u32,
+    V8 = sys::RFX_KEY_8 as u32,
+    V9 = sys::RFX_KEY_9 as u32,
+    Semicolon = sys::RFX_KEY_SEMICOLON as u32,
+    Equal = sys::RFX_KEY_EQUAL as u32,
+    A = sys::RFX_KEY_A as u32,
+    B = sys::RFX_KEY_B as u32,
+    C = sys::RFX_KEY_C as u32,
+    D = sys::RFX_KEY_D as u32,
+    E = sys::RFX_KEY_E as u32,
+    F = sys::RFX_KEY_F as u32,
+    G = sys::RFX_KEY_G as u32,
+    H = sys::RFX_KEY_H as u32,
+    I = sys::RFX_KEY_I as u32,
+    J = sys::RFX_KEY_J as u32,
+    K = sys::RFX_KEY_K as u32,
+    L = sys::RFX_KEY_L as u32,
+    M = sys::RFX_KEY_M as u32,
+    N = sys::RFX_KEY_N as u32,
+    O = sys::RFX_KEY_O as u32,
+    P = sys::RFX_KEY_P as u32,
+    Q = sys::RFX_KEY_Q as u32,
+    R = sys::RFX_KEY_R as u32,
+    S = sys::RFX_KEY_S as u32,
+    T = sys::RFX_KEY_T as u32,
+    U = sys::RFX_KEY_U as u32,
+    V = sys::RFX_KEY_V as u32,
+    W = sys::RFX_KEY_W as u32,
+    X = sys::RFX_KEY_X as u32,
+    Y = sys::RFX_KEY_Y as u32,
+    Z = sys::RFX_KEY_Z as u32,
+    LeftBracket = sys::RFX_KEY_LEFT_BRACKET as u32,
+    Backslash = sys::RFX_KEY_BACKSLASH as u32,
+    RightBracket = sys::RFX_KEY_RIGHT_BRACKET as u32,
+    GraveAccent = sys::RFX_KEY_GRAVE_ACCENT as u32,
+    Escape = sys::RFX_KEY_ESCAPE as u32,
+    Enter = sys::RFX_KEY_ENTER as u32,
+    Tab = sys::RFX_KEY_TAB as u32,
+    Backspace = sys::RFX_KEY_BACKSPACE as u32,
+    Insert = sys::RFX_KEY_INSERT as u32,
+    Delete = sys::RFX_KEY_DELETE as u32,
+    Right = sys::RFX_KEY_RIGHT as u32,
+    Left = sys::RFX_KEY_LEFT as u32,
+    Down = sys::RFX_KEY_DOWN as u32,
+    Up = sys::RFX_KEY_UP as u32,
+    PageUp = sys::RFX_KEY_PAGE_UP as u32,
+    PageDown = sys::RFX_KEY_PAGE_DOWN as u32,
+    Home = sys::RFX_KEY_HOME as u32,
+    End = sys::RFX_KEY_END as u32,
+    CapsLock = sys::RFX_KEY_CAPS_LOCK as u32,
+    ScrollLock = sys::RFX_KEY_SCROLL_LOCK as u32,
+    NumLock = sys::RFX_KEY_NUM_LOCK as u32,
+    PrintScreen = sys::RFX_KEY_PRINT_SCREEN as u32,
+    Pause = sys::RFX_KEY_PAUSE as u32,
+    F1 = sys::RFX_KEY_F1 as u32,
+    F2 = sys::RFX_KEY_F2 as u32,
+    F3 = sys::RFX_KEY_F3 as u32,
+    F4 = sys::RFX_KEY_F4 as u32,
+    F5 = sys::RFX_KEY_F5 as u32,
+    F6 = sys::RFX_KEY_F6 as u32,
+    F7 = sys::RFX_KEY_F7 as u32,
+    F8 = sys::RFX_KEY_F8 as u32,
+    F9 = sys::RFX_KEY_F9 as u32,
+    F10 = sys::RFX_KEY_F10 as u32,
+    F11 = sys::RFX_KEY_F11 as u32,
+    F12 = sys::RFX_KEY_F12 as u32,
+    LeftShift = sys::RFX_KEY_LEFT_SHIFT as u32,
+    LeftControl = sys::RFX_KEY_LEFT_CONTROL as u32,
+    LeftAlt = sys::RFX_KEY_LEFT_ALT as u32,
+    LeftSuper = sys::RFX_KEY_LEFT_SUPER as u32,
+    RightShift = sys::RFX_KEY_RIGHT_SHIFT as u32,
+    RightControl = sys::RFX_KEY_RIGHT_CONTROL as u32,
+    RightAlt = sys::RFX_KEY_RIGHT_ALT as u32,
+    RightSuper = sys::RFX_KEY_RIGHT_SUPER as u32,
+    Menu = sys::RFX_KEY_MENU as u32,
+}
+
 //
 // Handles and structs
 //
@@ -2022,11 +2930,9 @@ impl CommandList {
     }
     pub fn begin_swapchain_render_pass(&self, depth_stencil_format: Format, clear_color: Color) {
         unsafe {
-            sys::rfxCmdBeginSwapchainRenderPass(
-                self.0,
-                unsafe { std::mem::transmute(depth_stencil_format) },
-                unsafe { std::mem::transmute(clear_color) },
-            )
+            sys::rfxCmdBeginSwapchainRenderPass(self.0, depth_stencil_format as u32, unsafe {
+                std::mem::transmute(clear_color)
+            })
         }
     }
     pub fn begin_render_pass(
@@ -2084,9 +2990,9 @@ impl CommandList {
         unsafe {
             sys::rfxCmdSetShadingRate(
                 self.0,
-                unsafe { std::mem::transmute(rate) },
-                unsafe { std::mem::transmute(primitive_combiner) },
-                unsafe { std::mem::transmute(attachment_combiner) },
+                rate as u32,
+                primitive_combiner as u32,
+                attachment_combiner as u32,
             )
         }
     }
@@ -2109,9 +3015,7 @@ impl CommandList {
         unsafe { sys::rfxCmdBindVertexBuffer(self.0, buffer.0) }
     }
     pub fn bind_index_buffer(&self, buffer: Buffer, index_type: IndexType) {
-        unsafe {
-            sys::rfxCmdBindIndexBuffer(self.0, buffer.0, unsafe { std::mem::transmute(index_type) })
-        }
+        unsafe { sys::rfxCmdBindIndexBuffer(self.0, buffer.0, index_type as u32) }
     }
     pub fn push_constants(&self, data: *mut c_void, size: usize) {
         unsafe { sys::rfxCmdPushConstants(self.0, data as *mut c_void, size) }
@@ -2246,14 +3150,10 @@ impl CommandList {
         }
     }
     pub fn resolve_texture(&self, dst: Texture, src: Texture, op: ResolveOp) {
-        unsafe {
-            sys::rfxCmdResolveTexture(self.0, dst.0, src.0, unsafe { std::mem::transmute(op) })
-        }
+        unsafe { sys::rfxCmdResolveTexture(self.0, dst.0, src.0, op as u32) }
     }
     pub fn copy_micromap(&self, dst: Micromap, src: Micromap, mode: CopyMode) {
-        unsafe {
-            sys::rfxCmdCopyMicromap(self.0, dst.0, src.0, unsafe { std::mem::transmute(mode) })
-        }
+        unsafe { sys::rfxCmdCopyMicromap(self.0, dst.0, src.0, mode as u32) }
     }
     pub fn copy_acceleration_structure(
         &self,
@@ -2261,21 +3161,13 @@ impl CommandList {
         src: AccelerationStructure,
         mode: CopyMode,
     ) {
-        unsafe {
-            sys::rfxCmdCopyAccelerationStructure(self.0, dst.0, src.0, unsafe {
-                std::mem::transmute(mode)
-            })
-        }
+        unsafe { sys::rfxCmdCopyAccelerationStructure(self.0, dst.0, src.0, mode as u32) }
     }
     pub fn transition_buffer(&self, buffer: Buffer, state: ResourceState) {
-        unsafe {
-            sys::rfxCmdTransitionBuffer(self.0, buffer.0, unsafe { std::mem::transmute(state) })
-        }
+        unsafe { sys::rfxCmdTransitionBuffer(self.0, buffer.0, state as u32) }
     }
     pub fn transition_texture(&self, texture: Texture, state: ResourceState) {
-        unsafe {
-            sys::rfxCmdTransitionTexture(self.0, texture.0, unsafe { std::mem::transmute(state) })
-        }
+        unsafe { sys::rfxCmdTransitionTexture(self.0, texture.0, state as u32) }
     }
     pub fn begin_event(&self, name: &str) {
         unsafe { sys::rfxCmdBeginEvent(self.0, std::ffi::CString::new(name).unwrap().as_ptr()) }
@@ -2471,14 +3363,7 @@ impl Texture {
         layer_count: u32,
     ) -> Texture {
         Texture(unsafe {
-            sys::rfxCreateTextureView(
-                self.0,
-                unsafe { std::mem::transmute(format) },
-                mip,
-                mip_count,
-                layer,
-                layer_count,
-            )
+            sys::rfxCreateTextureView(self.0, format as u32, mip, mip_count, layer, layer_count)
         })
     }
     pub fn destroy(&self) {
@@ -2503,7 +3388,7 @@ impl Upscaler {
     }
 }
 pub fn request_backend(backend: Backend, enable_validation: bool) {
-    unsafe { sys::rfxRequestBackend(unsafe { std::mem::transmute(backend) }, enable_validation) }
+    unsafe { sys::rfxRequestBackend(backend as u32, enable_validation) }
 }
 pub fn open_window(title: &str, width: i32, height: i32) -> bool {
     unsafe {
@@ -2515,7 +3400,7 @@ pub fn open_window(title: &str, width: i32, height: i32) -> bool {
     }
 }
 pub fn supports_features(features: FeatureSupportFlags) -> bool {
-    unsafe { sys::rfxSupportsFeatures(unsafe { std::mem::transmute(features) }) }
+    unsafe { sys::rfxSupportsFeatures(features.bits()) }
 }
 pub fn get_supported_features() -> FeatureSupportFlags {
     unsafe { std::mem::transmute(unsafe { sys::rfxGetSupportedFeatures() }) }
@@ -2527,19 +3412,19 @@ pub fn set_anisotropy(level: i32) {
     unsafe { sys::rfxSetAnisotropy(level) }
 }
 pub fn set_window_flags(flags: WindowFlags) {
-    unsafe { sys::rfxSetWindowFlags(unsafe { std::mem::transmute(flags) }) }
+    unsafe { sys::rfxSetWindowFlags(flags.bits()) }
 }
 pub fn enable_window_flags(flags: WindowFlags) {
-    unsafe { sys::rfxEnableWindowFlags(unsafe { std::mem::transmute(flags) }) }
+    unsafe { sys::rfxEnableWindowFlags(flags.bits()) }
 }
 pub fn disable_window_flags(flags: WindowFlags) {
-    unsafe { sys::rfxDisableWindowFlags(unsafe { std::mem::transmute(flags) }) }
+    unsafe { sys::rfxDisableWindowFlags(flags.bits()) }
 }
 pub fn toggle_window_flags(flags: WindowFlags) {
-    unsafe { sys::rfxToggleWindowFlags(unsafe { std::mem::transmute(flags) }) }
+    unsafe { sys::rfxToggleWindowFlags(flags.bits()) }
 }
 pub fn has_window_flags(flags: WindowFlags) -> bool {
-    unsafe { sys::rfxHasWindowFlags(unsafe { std::mem::transmute(flags) }) }
+    unsafe { sys::rfxHasWindowFlags(flags.bits()) }
 }
 pub fn window_should_close() -> bool {
     unsafe { sys::rfxWindowShouldClose() }
@@ -2566,22 +3451,22 @@ pub fn get_frame_index() -> u32 {
     unsafe { sys::rfxGetFrameIndex() }
 }
 pub fn is_key_down(key: Key) -> bool {
-    unsafe { sys::rfxIsKeyDown(unsafe { std::mem::transmute(key) }) }
+    unsafe { sys::rfxIsKeyDown(key as u32) }
 }
 pub fn is_key_pressed(key: Key) -> bool {
-    unsafe { sys::rfxIsKeyPressed(unsafe { std::mem::transmute(key) }) }
+    unsafe { sys::rfxIsKeyPressed(key as u32) }
 }
 pub fn is_key_released(key: Key) -> bool {
-    unsafe { sys::rfxIsKeyReleased(unsafe { std::mem::transmute(key) }) }
+    unsafe { sys::rfxIsKeyReleased(key as u32) }
 }
 pub fn is_mouse_button_down(button: MouseButton) -> bool {
-    unsafe { sys::rfxIsMouseButtonDown(unsafe { std::mem::transmute(button) }) }
+    unsafe { sys::rfxIsMouseButtonDown(button as u32) }
 }
 pub fn is_mouse_button_pressed(button: MouseButton) -> bool {
-    unsafe { sys::rfxIsMouseButtonPressed(unsafe { std::mem::transmute(button) }) }
+    unsafe { sys::rfxIsMouseButtonPressed(button as u32) }
 }
 pub fn is_mouse_button_released(button: MouseButton) -> bool {
-    unsafe { sys::rfxIsMouseButtonReleased(unsafe { std::mem::transmute(button) }) }
+    unsafe { sys::rfxIsMouseButtonReleased(button as u32) }
 }
 pub fn get_mouse_pos(x: *mut f32, y: *mut f32) {
     unsafe { sys::rfxGetMousePos(x as *mut f32, y as *mut f32) }
@@ -2593,7 +3478,7 @@ pub fn set_mouse_cursor_visible(visible: bool) {
     unsafe { sys::rfxSetMouseCursorVisible(visible) }
 }
 pub fn set_mouse_cursor(cursor: CursorType) {
-    unsafe { sys::rfxSetMouseCursor(unsafe { std::mem::transmute(cursor) }) }
+    unsafe { sys::rfxSetMouseCursor(cursor as u32) }
 }
 pub fn create_buffer(
     size: usize,
@@ -2606,8 +3491,8 @@ pub fn create_buffer(
         sys::rfxCreateBuffer(
             size,
             stride,
-            unsafe { std::mem::transmute(usage) },
-            unsafe { std::mem::transmute(mem_type) },
+            usage.bits(),
+            mem_type as u32,
             initial_data as *mut c_void,
         )
     })
@@ -2624,9 +3509,9 @@ pub fn create_texture(
         sys::rfxCreateTexture(
             width,
             height,
-            unsafe { std::mem::transmute(format) },
+            format as u32,
             sample_count,
-            unsafe { std::mem::transmute(usage) },
+            usage.bits(),
             initial_data as *mut c_void,
         )
     })
@@ -2641,11 +3526,7 @@ pub fn get_backbuffer_texture() -> Texture {
     Texture(unsafe { sys::rfxGetBackbufferTexture() })
 }
 pub fn create_sampler(filter: Filter, address_mode: AddressMode) -> Sampler {
-    Sampler(unsafe {
-        sys::rfxCreateSampler(unsafe { std::mem::transmute(filter) }, unsafe {
-            std::mem::transmute(address_mode)
-        })
-    })
+    Sampler(unsafe { sys::rfxCreateSampler(filter as u32, address_mode as u32) })
 }
 pub fn compile_shader(
     filepath: &str,
@@ -2691,7 +3572,7 @@ pub fn get_command_list() -> CommandList {
     CommandList(unsafe { sys::rfxGetCommandList() })
 }
 pub fn create_command_list(queue_type: QueueType) -> CommandList {
-    CommandList(unsafe { sys::rfxCreateCommandList(unsafe { std::mem::transmute(queue_type) }) })
+    CommandList(unsafe { sys::rfxCreateCommandList(queue_type as u32) })
 }
 pub fn begin_frame() {
     unsafe { sys::rfxBeginFrame() }
@@ -2715,7 +3596,7 @@ pub fn get_gpu_timestamps(out_timestamps: *mut GpuTimestamp, max_count: u32) -> 
     unsafe { sys::rfxGetGpuTimestamps(out_timestamps as *mut sys::RfxGpuTimestamp, max_count) }
 }
 pub fn create_query_pool(r#type: QueryType, capacity: u32) -> QueryPool {
-    QueryPool(unsafe { sys::rfxCreateQueryPool(unsafe { std::mem::transmute(r#type) }, capacity) })
+    QueryPool(unsafe { sys::rfxCreateQueryPool(r#type as u32, capacity) })
 }
 pub fn set_low_latency_mode(enabled: bool, boost: bool) {
     unsafe { sys::rfxSetLowLatencyMode(enabled, boost) }
@@ -2724,7 +3605,7 @@ pub fn latency_sleep() {
     unsafe { sys::rfxLatencySleep() }
 }
 pub fn set_latency_marker(marker: LatencyMarker) {
-    unsafe { sys::rfxSetLatencyMarker(unsafe { std::mem::transmute(marker) }) }
+    unsafe { sys::rfxSetLatencyMarker(marker as u32) }
 }
 pub fn get_latency_report(out_report: *mut LatencyReport) -> bool {
     unsafe { sys::rfxGetLatencyReport(out_report as *mut sys::RfxLatencyReport) }
@@ -2736,9 +3617,7 @@ pub fn shutdown_im_gui() {
     unsafe { sys::rfxShutdownImGui() }
 }
 pub fn create_denoiser(r#type: DenoiserType, width: i32, height: i32) -> Denoiser {
-    Denoiser(unsafe {
-        sys::rfxCreateDenoiser(unsafe { std::mem::transmute(r#type) }, width, height)
-    })
+    Denoiser(unsafe { sys::rfxCreateDenoiser(r#type as u32, width, height) })
 }
 pub fn create_acceleration_structure(
     desc: *mut AccelerationStructureDesc,
@@ -2756,7 +3635,7 @@ pub fn create_micromap(desc: *mut MicromapDesc) -> Micromap {
     Micromap(unsafe { sys::rfxCreateMicromap(desc as *mut sys::RfxMicromapDesc) })
 }
 pub fn is_upscaler_supported(r#type: UpscalerType) -> bool {
-    unsafe { sys::rfxIsUpscalerSupported(unsafe { std::mem::transmute(r#type) }) }
+    unsafe { sys::rfxIsUpscalerSupported(r#type as u32) }
 }
 pub fn create_upscaler(desc: *mut UpscalerDesc) -> Upscaler {
     Upscaler(unsafe { sys::rfxCreateUpscaler(desc as *mut sys::RfxUpscalerDesc) })

@@ -3,10 +3,14 @@ import os
 import subprocess
 import sys
 
+import gen_odin
 import gen_rs
 from gen_ast import ClangAstParser
 
-GENERATORS = {"rust": gen_rs.RustGenerator}
+GENERATORS = {
+    "rust": gen_rs.RustGenerator,
+    "odin": gen_odin.OdinGenerator,
+}
 
 
 def run_command(cmd, cwd=None):
@@ -86,6 +90,17 @@ fn main() {{
     run_command(["rustfmt", lib_path])
 
 
+def handle_odin_output(output_path, content):
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    # Main package file
+    file_path = os.path.join(output_path, "rafx.odin")
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(f"Generated: {file_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="FFI Binding Generator")
     parser.add_argument("header", help="Path to the C header file")
@@ -119,6 +134,8 @@ def main():
 
     if args.lang == "rust":
         handle_rust_output(args.output, generated_code)
+    elif args.lang == "odin":
+        handle_odin_output(args.output, generated_code)
     else:
         print(generated_code)
 
