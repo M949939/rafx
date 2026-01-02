@@ -363,3 +363,7 @@ if(RAFX_BUILD_EXAMPLES)
     add_cpp_example(low_latency examples/low_latency.cc)
     add_cpp_example(shadow_mapping examples/shadow_mapping.cc)
 endif()
+
+install(TARGETS ${PROJECT_NAME} NRI NRD NRDIntegration
+        DESTINATION .)
+install(FILES $<TARGET_FILE:slang::slang> DESTINATION .)
