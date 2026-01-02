@@ -11,10 +11,21 @@
 #include <NRD.h>
 #include <NRDIntegration.h>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
+
 #include <NRDIntegration.hpp> /* impl */
-#pragma clang diagnostic pop
+
+#if defined(__clang__)
+#    pragma clang diagnostic pop
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic pop
+#endif
 
 struct RfxDenoiserImpl {
     nrd::Integration instance;

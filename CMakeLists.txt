@@ -53,9 +53,18 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(COMPILE_OPTIONS ${SIMD} -Wextra)
 elseif(MSVC)
-    set(COMPILE_OPTIONS /W4 /WX
-        /wd4324 # padding was added at the end of a structure because you specified an alignment specifier
+    set(COMPILE_OPTIONS
+        /W4
+        /wd4324 # struct padding warning
+        /wd4244 # possible loss of data
+        /wd4305 # truncation from 'double' to 'float'
+        /wd4576 # parenthesized type followed by initializer list
+        /wd4996 # 'sprintf': This function or variable may be unsafe
+        /wd4189 # local variable is initialized but not referenced
+        /wd4505 # unreferenced function with internal linkage removed
+        /wd4201 # nonstandard extension used: nameless struct/union
     )
+    string(REPLACE "/WX" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 else()
     message(WARNING "Unknown compiler!")
 endif()
@@ -325,6 +334,7 @@ function(add_example NAME SOURCE_FILE)
     add_executable(${NAME} ${SOURCE_FILE})
     target_link_libraries(${NAME} PRIVATE ${PROJECT_NAME} imgui)
     target_include_directories(${NAME} PRIVATE thirdparty)
+    target_compile_options(${NAME} PRIVATE ${COMPILE_OPTIONS})
     set_target_properties(${NAME} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/examples"
     )

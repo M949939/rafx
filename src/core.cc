@@ -186,8 +186,8 @@ static void InitBindless() {
     uint32_t rangeCount = 5;
     if (hasRT) {
         // 5 = acceleration structures srv
-        ranges[5] = { isD3D12 ? (RFX_MAX_BINDLESS_TEXTURES * 2) : 5u, 2048, nri::DescriptorType::ACCELERATION_STRUCTURE, nri::StageBits::ALL,
-                        bindlessFlags };
+        ranges[5] = { isD3D12 ? (RFX_MAX_BINDLESS_TEXTURES * 2) : 5u, 2048, nri::DescriptorType::ACCELERATION_STRUCTURE,
+                      nri::StageBits::ALL, bindlessFlags };
         rangeCount = 6;
     }
 
