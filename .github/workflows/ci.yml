@@ -3,6 +3,9 @@ name: Nightly Build
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build ${{ matrix.os }}
@@ -14,8 +17,8 @@ jobs:
           - os: windows-latest
             artifact_name: rafx_release_win_amd64.zip
             cmake_args: >
-              -DCMAKE_C_COMPILER=clang-cl
-              -DCMAKE_CXX_COMPILER=clang-cl
+              -DCMAKE_C_COMPILER=clang
+              -DCMAKE_CXX_COMPILER=clang++
               -DRAFX_D3D12_SUPPORT=ON
           - os: ubuntu-latest
             artifact_name: rafx_release_linux_amd64.zip
@@ -50,10 +53,6 @@ jobs:
         with:
           arch: x64
 
-      - name: Install Ninja (Windows)
-        if: runner.os == 'Windows'
-        run: choco install ninja
-
       - name: Configure CMake
         run: >
           cmake -S . -B build -G Ninja
@@ -77,6 +76,5 @@ jobs:
           files: ${{ matrix.artifact_name }}
           draft: false
           prerelease: true
-          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
