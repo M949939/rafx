@@ -1814,7 +1814,7 @@ struct RafxMemoryBlob : public ISlangBlob {
 
     virtual ~RafxMemoryBlob() {
         if (m_OwnsData)
-            delete[] (char*)m_Data;
+            RfxFree((char*)m_Data);
     }
 
     // ISlangUnknown
@@ -1919,7 +1919,7 @@ struct RafxFileSystem : public ISlangFileSystem {
 
         char* buffer = (char*)RfxAlloc(size * sizeof(char));
         if (fread(buffer, 1, size, f) != (size_t)size) {
-            delete[] buffer;
+            RfxFree(buffer);
             fclose(f);
             return SLANG_E_CANNOT_OPEN;
         }
