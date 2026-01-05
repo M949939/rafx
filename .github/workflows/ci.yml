@@ -54,10 +54,7 @@ jobs:
       # macos setup
       - name: Setup Vulkan SDK (MacOS)
         if: runner.os == 'macOS'
-        uses: humbletim/install-vulkan-sdk@v1.2
-        with:
-          version: latest
-          cache: true
+        uses: jakoch/install-vulkan-sdk-action@v1
 
       # windows setup
       - name: Setup MSVC (Windows)
