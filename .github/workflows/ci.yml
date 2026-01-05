@@ -25,17 +25,13 @@ jobs:
               -DRAFX_D3D12_SUPPORT=ON
 
           # Windows ARM64
-          - os: windows-latest
+          - os: windows-11-arm
             target_arch: arm64
-            architecture: amd64_arm64
             artifact_name: rafx_release_win_arm64.zip
             cmake_args: >
               -DCMAKE_C_COMPILER=clang
               -DCMAKE_CXX_COMPILER=clang++
-              -DCMAKE_C_FLAGS="--target=arm64-pc-windows-msvc"
-              -DCMAKE_CXX_FLAGS="--target=arm64-pc-windows-msvc"
               -DRAFX_D3D12_SUPPORT=ON
-              -DCMAKE_GENERATOR_PLATFORM=ARM64
 
           # Linux
           - os: ubuntu-latest
