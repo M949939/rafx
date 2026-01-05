@@ -1,3 +1,4 @@
+import os
 import platform
 import shutil
 import sys
@@ -43,17 +44,27 @@ def main():
 
     system_os = platform.system()
 
+    target_arch = os.environ.get("RAFX_TARGET_ARCH", platform.machine()).lower()
+
     if system_os == "Windows":
-        zip_name = "rafx_release_win_amd64"
+        if "arm64" in target_arch or "aarch64" in target_arch:
+            zip_name = "rafx_release_win_arm64"
+        else:
+            zip_name = "rafx_release_win_amd64"
+            target_arch = "x64"
+
         lib_ext = ".dll"
         implib_ext = ".lib"
     elif system_os == "Linux":
-        zip_name = "rafx_release_linux_amd64"
+        if "aarch64" in target_arch or "arm64" in target_arch:
+            zip_name = "rafx_release_linux_arm64"
+        else:
+            zip_name = "rafx_release_linux_amd64"
+
         lib_ext = ".so"
         implib_ext = None
     elif system_os == "Darwin":
-        machine = platform.machine().lower()
-        if "arm" in machine or "aarch" in machine:
+        if "arm" in target_arch or "aarch" in target_arch:
             arch_name = "arm64"
         else:
             arch_name = "x64"
@@ -71,7 +82,7 @@ def main():
     bin_dir.mkdir(parents=True, exist_ok=True)
     inc_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Packaging artifacts for {system_os}...")
+    print(f"Packaging artifacts for {system_os} ({target_arch})...")
 
     files_to_copy = [
         (root_dir / "include/rafx.h", inc_dir),
@@ -101,14 +112,18 @@ def main():
     if system_os == "Windows":
         copy_slang_binaries(slang_base / "bin", bin_dir, system_os)
 
-        dxc_bin = build_dir / "_deps/dxc-src/bin/x64"
+        dxc_arch = "arm64" if "arm64" in target_arch else "x64"
+        dxc_bin = build_dir / f"_deps/dxc-src/bin/{dxc_arch}"
+
         if dxc_bin.exists():
-            print("Copying DXC binaries...")
+            print(f"Copying DXC binaries from {dxc_bin}...")
             for f in ["dxcompiler.dll", "dxil.dll"]:
                 src = dxc_bin / f
                 if src.exists():
                     shutil.copy(src, bin_dir)
                     print(f"  Copied: {f}")
+        else:
+            print(f"DXC binaries not found at {dxc_bin} (Skipping)")
 
     elif system_os == "Linux":
         copy_slang_binaries(slang_base / "lib", bin_dir, system_os)

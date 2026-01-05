@@ -8,30 +8,62 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ matrix.os }}
+    name: Build ${{ matrix.os }} ${{ matrix.target_arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
         include:
+          # Windows x64
           - os: windows-latest
+            target_arch: x64
+            architecture: x64
             artifact_name: rafx_release_win_amd64.zip
             cmake_args: >
               -DCMAKE_C_COMPILER=clang
               -DCMAKE_CXX_COMPILER=clang++
               -DRAFX_D3D12_SUPPORT=ON
+
+          # Windows ARM64
+          - os: windows-latest
+            target_arch: arm64
+            architecture: amd64_arm64
+            artifact_name: rafx_release_win_arm64.zip
+            cmake_args: >
+              -DCMAKE_C_COMPILER=clang
+              -DCMAKE_CXX_COMPILER=clang++
+              -DCMAKE_C_FLAGS="--target=arm64-pc-windows-msvc"
+              -DCMAKE_CXX_FLAGS="--target=arm64-pc-windows-msvc"
+              -DRAFX_D3D12_SUPPORT=ON
+              -DCMAKE_GENERATOR_PLATFORM=ARM64
+
+          # Linux
           - os: ubuntu-latest
+            target_arch: x64
             artifact_name: rafx_release_linux_amd64.zip
             cmake_args: >
               -DCMAKE_C_COMPILER=clang
               -DCMAKE_CXX_COMPILER=clang++
               -DRAFX_USE_WAYLAND=ON
-          # apple silicon
+
+          # Linux ARM64 (New)
+          - os: ubuntu-24.04-arm
+            target_arch: arm64
+            artifact_name: rafx_release_linux_arm64.zip
+            cmake_args: >
+              -DCMAKE_C_COMPILER=clang
+              -DCMAKE_CXX_COMPILER=clang++
+              -DRAFX_USE_WAYLAND=ON
+
+          # Apple Silicon
           - os: macos-latest
+            target_arch: arm64
             artifact_name: rafx_release_macos_arm64.zip
             cmake_args: ""
-          # intel
+
+          # Apple Intel
           - os: macos-15-intel
+            target_arch: x64
             artifact_name: rafx_release_macos_x64.zip
             cmake_args: ""
 
@@ -51,24 +83,21 @@ jobs:
         with:
           python-version: "3.11"
 
-      # linux setup
       - name: Install Linux Dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libxkbcommon-dev
 
-      # macos setup
       - name: Setup Vulkan SDK (MacOS)
         if: runner.os == 'macOS'
         uses: jakoch/install-vulkan-sdk-action@v1
 
-      # windows setup
       - name: Setup MSVC (Windows)
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64
+          arch: ${{ matrix.architecture }}
 
       - name: Configure CMake
         run: >
@@ -84,6 +113,8 @@ jobs:
 
       - name: Package Release
         run: python .github/package_release.py
+        env:
+          RAFX_TARGET_ARCH: ${{ matrix.target_arch }}
 
       - name: Upload Nightly Release
         uses: softprops/action-gh-release@v1
