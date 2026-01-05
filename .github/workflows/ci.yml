@@ -23,15 +23,17 @@ jobs:
           - os: ubuntu-latest
             artifact_name: rafx_release_linux_amd64.zip
             cmake_args: >
-              -DCMAKE_BUILD_TYPE=Release
               -DCMAKE_C_COMPILER=clang
               -DCMAKE_CXX_COMPILER=clang++
               -DRAFX_USE_WAYLAND=ON
           # apple silicon
           - os: macos-latest
             artifact_name: rafx_release_macos_arm64.zip
-            cmake_args: >
-              -DCMAKE_BUILD_TYPE=Release
+            cmake_args: ""
+          # intel
+          - os: macos-15-intel
+            artifact_name: rafx_release_macos_x64.zip
+            cmake_args: ""
 
     steps:
       - name: Checkout repository
