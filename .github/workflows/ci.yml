@@ -42,15 +42,6 @@ jobs:
               -DCMAKE_CXX_COMPILER=clang++
               -DRAFX_USE_WAYLAND=ON
 
-          # Linux ARM64 (New)
-          - os: ubuntu-24.04-arm
-            target_arch: arm64
-            artifact_name: rafx_release_linux_arm64.zip
-            cmake_args: >
-              -DCMAKE_C_COMPILER=clang
-              -DCMAKE_CXX_COMPILER=clang++
-              -DRAFX_USE_WAYLAND=ON
-
           # Apple Silicon
           - os: macos-latest
             target_arch: arm64
