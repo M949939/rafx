@@ -44,6 +44,9 @@ extern "C" {
 // Typedefs
 //
 
+typedef bool (*RfxShaderCacheLoadCallback)(uint64_t hash, void** outData, size_t* outSize, void* user);
+typedef void (*RfxShaderCacheSaveCallback)(uint64_t hash, const void* data, size_t size, void* user);
+
 typedef struct {
     float r, g, b, a;
 } RfxColor;
@@ -939,6 +942,18 @@ RAFX_API RfxShader
 rfxCompileShaderMem(const char* source, const char** defines, int numDefines, const char** includeDirs, int numIncludeDirs);
 RAFX_API void rfxDestroyShader(RfxShader shader);
 RAFX_API void rfxWatchShader(RfxShader shader, bool watch);
+
+RAFX_API void rfxSetShaderCacheEnabled(bool enabled);
+RAFX_API void rfxSetShaderCachePath(const char* path); // default is <system temp folder>/rafx-shdcache
+RAFX_API void rfxSetShaderCacheCallbacks(RfxShaderCacheLoadCallback load, RfxShaderCacheSaveCallback save, void* user);
+RAFX_API bool rfxWasShaderCached(RfxShader shader);
+
+// rafx.h is always available. Threadsafe: yes
+RAFX_API void rfxAddVirtualShaderFile(const char* filename, const char* content);
+RAFX_API void rfxRemoveVirtualShaderFile(const char* filename);
+RAFX_API void rfxPrecompileShader(
+    const char* sourceOrPath, const char** defines, int numDefines, const char** includeDirs, int numIncludeDirs, bool fromMemory
+);
 
 // Pipelines
 RAFX_API RfxPipeline rfxCreatePipeline(const RfxPipelineDesc* desc);

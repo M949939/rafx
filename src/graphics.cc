@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdio>
 #include <source_location>
+#include <fstream>
 
 #include <NRD.h>
 #include <NRDIntegration.h>
@@ -1847,6 +1848,18 @@ struct RafxMemoryBlob : public ISlangBlob {
 };
 
 struct RafxFileSystem : public ISlangFileSystem {
+    std::map<std::string, std::string> m_VirtualFiles;
+
+    void addFile(const char* name, const char* content) {
+        std::lock_guard<std::mutex> lock(CORE.VirtualFSMutex);
+        m_VirtualFiles[name] = content;
+    }
+
+    void removeFile(const char* name) {
+        std::lock_guard<std::mutex> lock(CORE.VirtualFSMutex);
+        m_VirtualFiles.erase(name);
+    }
+
     // ISlangUnknown
     SLANG_NO_THROW SlangResult SLANG_MCALL queryInterface(SlangUUID const& uuid, void** outObject) override {
         if (uuid == ISlangUnknown::getTypeGuid() || uuid == ISlangCastable::getTypeGuid() || uuid == ISlangFileSystem::getTypeGuid()) {
@@ -1876,6 +1889,21 @@ struct RafxFileSystem : public ISlangFileSystem {
     SLANG_NO_THROW SlangResult SLANG_MCALL loadFile(char const* path, ISlangBlob** outBlob) override {
         if (!outBlob)
             return SLANG_E_INVALID_ARG;
+
+        // Check VFS
+        {
+            std::lock_guard<std::mutex> lock(CORE.VirtualFSMutex);
+            auto it = m_VirtualFiles.find(path);
+            if (it != m_VirtualFiles.end()) {
+                // Copy to ensure blob owns memory
+                size_t len = it->second.size();
+                char* buf = new char[len];
+                memcpy(buf, it->second.c_str(), len);
+                *outBlob = new RafxMemoryBlob(buf, len, true);
+                return SLANG_OK;
+            }
+        }
+
         if (strcmp(path, "rafx.slang") == 0) {
             *outBlob = new RafxMemoryBlob(s_RafxSlangContent, strlen(s_RafxSlangContent), false);
             return SLANG_OK;
@@ -1931,6 +1959,328 @@ static void ParseConstSampler(slang::UserAttribute* attr, nri::SamplerDesc& desc
     desc.mipMax = 16.0f;
 }
 
+// FNV-1a 64-bit hash
+static uint64_t Hash64(const void* data, size_t size, uint64_t seed = 0xcbf29ce484222325ULL) {
+    const uint8_t* p = (const uint8_t*)data;
+    for (size_t i = 0; i < size; i++) {
+        seed ^= p[i];
+        seed *= 0x100000001b3ULL;
+    }
+    return seed;
+}
+
+static uint64_t ComputeShaderHash(
+    const char* path, const char* source, const char** defines, int numDefines, const char** includeDirs, int numIncludeDirs, bool isD3D12
+) {
+    uint64_t hash = 0;
+    // hash source/content
+    if (source) {
+        hash = Hash64(source, strlen(source), hash);
+    } else if (path) {
+        // try VFS first
+        bool foundInVfs = false;
+        {
+            std::lock_guard<std::mutex> lock(CORE.VirtualFSMutex);
+            auto it = s_FileSystem.m_VirtualFiles.find(path);
+            if (it != s_FileSystem.m_VirtualFiles.end()) {
+                hash = Hash64(it->second.c_str(), it->second.size(), hash);
+                foundInVfs = true;
+            }
+        }
+
+        if (!foundInVfs) {
+            // read file
+            std::ifstream t(path, std::ios::binary);
+            if (t.is_open()) {
+                std::stringstream buffer;
+                buffer << t.rdbuf();
+                std::string content = buffer.str();
+                hash = Hash64(content.data(), content.size(), hash);
+            } else {
+                hash = Hash64(path, strlen(path), hash);
+            }
+        }
+    }
+
+    // hash defines/includes/backend
+    for (int i = 0; i < numDefines; i++)
+        hash = Hash64(defines[i], strlen(defines[i]), hash);
+    for (int i = 0; i < numIncludeDirs; i++)
+        hash = Hash64(includeDirs[i], strlen(includeDirs[i]), hash);
+    uint8_t backend = isD3D12 ? 1 : 0;
+    hash = Hash64(&backend, 1, hash);
+    return hash;
+}
+
+struct CacheHeader {
+    uint32_t magic; // 'RAFX'
+    uint32_t version;
+    uint32_t stageCount;
+    uint32_t bindlessSetIndex;
+    uint32_t descriptorSetCount;
+    uint32_t bindingCount;
+    uint32_t rootConstantCount;
+    uint32_t rootSamplerCount;
+    uint32_t stageMask;
+};
+
+static std::filesystem::path GetCacheFilePath(uint64_t hash) {
+    if (CORE.ShaderCachePath.empty()) {
+        auto tmp = std::filesystem::temp_directory_path() / "rafx-shdcache";
+        std::filesystem::create_directories(tmp);
+        CORE.ShaderCachePath = tmp.string();
+    }
+    char name[32];
+    snprintf(name, 32, "%llx.bin", (unsigned long long)hash);
+    return std::filesystem::path(CORE.ShaderCachePath) / name;
+}
+
+static RfxShaderImpl* TryLoadFromCache(uint64_t hash) {
+    if (!CORE.ShaderCacheEnabled)
+        return nullptr;
+
+    std::vector<uint8_t> data;
+    {
+        std::lock_guard<std::mutex> lock(CORE.ShaderCacheMutex);
+        if (CORE.CacheLoadCb) {
+            void* ptr = nullptr;
+            size_t size = 0;
+            if (CORE.CacheLoadCb(hash, &ptr, &size, CORE.CacheUserPtr) && ptr && size > 0) {
+                data.resize(size);
+                memcpy(data.data(), ptr, size);
+            }
+        } else {
+            std::filesystem::path p = GetCacheFilePath(hash);
+            if (std::filesystem::exists(p)) {
+                std::ifstream file(p, std::ios::binary);
+                if (file)
+                    data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+            }
+        }
+    }
+
+    if (data.empty())
+        return nullptr;
+    if (data.size() < sizeof(CacheHeader))
+        return nullptr;
+
+    CacheHeader* h = (CacheHeader*)data.data();
+    if (h->magic != 0x52414658) // 'RAFX'
+        return nullptr;
+
+    size_t offset = sizeof(CacheHeader);
+
+    auto Check = [&](size_t size) { return (offset + size <= data.size()); };
+    if (!Check(0))
+        return nullptr;
+
+    RfxShaderImpl* impl = new RfxShaderImpl();
+    impl->bindlessSetIndex = h->bindlessSetIndex;
+    impl->descriptorSetCount = h->descriptorSetCount;
+    impl->stageMask = (nri::StageBits)h->stageMask;
+    impl->fromCache = true;
+
+    auto ReadString = [&](std::string& out) {
+        if (!Check(4))
+            return;
+        uint32_t len = 0;
+        memcpy(&len, data.data() + offset, 4);
+        offset += 4;
+        if (len > 0) {
+            if (!Check(len))
+                return;
+            out.assign((const char*)(data.data() + offset), len);
+            offset += len;
+        }
+    };
+
+    // load stages
+    for (uint32_t i = 0; i < h->stageCount; ++i) {
+        RfxShaderImpl::Stage s;
+        if (!Check(sizeof(nri::StageBits)))
+            break;
+        memcpy(&s.stageBits, data.data() + offset, sizeof(nri::StageBits));
+        offset += sizeof(nri::StageBits);
+        ReadString(s.entryPoint);
+        ReadString(s.sourceEntryPoint);
+
+        if (!Check(4))
+            break;
+        uint32_t codeLen = 0;
+        memcpy(&codeLen, data.data() + offset, 4);
+        offset += 4;
+
+        if (!Check(codeLen))
+            break;
+        s.bytecode.resize(codeLen);
+        memcpy(s.bytecode.data(), data.data() + offset, codeLen);
+        offset += codeLen;
+        impl->stages.push_back(s);
+    }
+
+    // load bindings
+    for (uint32_t i = 0; i < h->bindingCount; ++i) {
+        if (!Check(sizeof(RfxShaderImpl::BindingRange)))
+            break;
+        RfxShaderImpl::BindingRange b;
+        memcpy(&b, data.data() + offset, sizeof(RfxShaderImpl::BindingRange));
+        offset += sizeof(RfxShaderImpl::BindingRange);
+        impl->bindings.push_back(b);
+    }
+
+    // load RootConstants
+    for (uint32_t i = 0; i < h->rootConstantCount; ++i) {
+        if (!Check(sizeof(nri::RootConstantDesc)))
+            break;
+        nri::RootConstantDesc rc;
+        memcpy(&rc, data.data() + offset, sizeof(nri::RootConstantDesc));
+        offset += sizeof(nri::RootConstantDesc);
+        impl->rootConstants.push_back(rc);
+    }
+
+    // load RootSamplers
+    for (uint32_t i = 0; i < h->rootSamplerCount; ++i) {
+        if (!Check(sizeof(nri::RootSamplerDesc)))
+            break;
+        nri::RootSamplerDesc rs;
+        memcpy(&rs, data.data() + offset, sizeof(nri::RootSamplerDesc));
+        offset += sizeof(nri::RootSamplerDesc);
+        impl->rootSamplers.push_back(rs);
+    }
+
+    return impl;
+}
+
+static void SaveToCache(uint64_t hash, RfxShaderImpl* impl) {
+    if (!CORE.ShaderCacheEnabled)
+        return;
+
+    std::vector<uint8_t> blob;
+    CacheHeader h = {};
+    h.magic = 0x52414658; // 'RAFX'
+    h.version = 1;
+    h.stageCount = (uint32_t)impl->stages.size();
+    h.bindlessSetIndex = impl->bindlessSetIndex;
+    h.descriptorSetCount = impl->descriptorSetCount;
+    h.bindingCount = (uint32_t)impl->bindings.size();
+    h.rootConstantCount = (uint32_t)impl->rootConstants.size();
+    h.rootSamplerCount = (uint32_t)impl->rootSamplers.size();
+    h.stageMask = (uint32_t)impl->stageMask;
+
+    auto Write = [&](const void* d, size_t s) {
+        size_t cur = blob.size();
+        blob.resize(cur + s);
+        memcpy(blob.data() + cur, d, s);
+    };
+    auto WriteString = [&](const std::string& s) {
+        uint32_t len = (uint32_t)s.size();
+        Write(&len, 4);
+        if (len > 0)
+            Write(s.data(), len);
+    };
+
+    Write(&h, sizeof(h));
+
+    for (const auto& s : impl->stages) {
+        Write(&s.stageBits, sizeof(s.stageBits));
+        WriteString(s.entryPoint);
+        WriteString(s.sourceEntryPoint);
+        uint32_t codeLen = (uint32_t)s.bytecode.size();
+        Write(&codeLen, 4);
+        Write(s.bytecode.data(), codeLen);
+    }
+
+    for (const auto& b : impl->bindings)
+        Write(&b, sizeof(b));
+    for (const auto& rc : impl->rootConstants)
+        Write(&rc, sizeof(rc));
+    for (const auto& rs : impl->rootSamplers)
+        Write(&rs, sizeof(rs));
+
+    {
+        std::lock_guard<std::mutex> lock(CORE.ShaderCacheMutex);
+        if (CORE.CacheSaveCb) {
+            CORE.CacheSaveCb(hash, blob.data(), blob.size(), CORE.CacheUserPtr);
+        } else {
+            std::ofstream file(GetCacheFilePath(hash), std::ios::binary);
+            if (file)
+                file.write((const char*)blob.data(), blob.size());
+        }
+    }
+}
+
+static bool CreatePipelineLayoutFromImpl(RfxShaderImpl* impl, bool isD3D12, bool hasRT) {
+    // reconstruct descriptor sets from bindings
+    std::vector<std::vector<nri::DescriptorRangeDesc>> rangeStorage;
+    std::map<uint32_t, std::vector<nri::DescriptorRangeDesc>> setBuilders;
+
+    for (const auto& b : impl->bindings) {
+        nri::DescriptorRangeDesc range = {};
+        range.baseRegisterIndex = b.baseRegister;
+        range.descriptorNum = b.count;
+        range.descriptorType = b.type;
+        range.shaderStages = impl->stageMask;
+        setBuilders[b.setIndex].push_back(range);
+    }
+
+    std::vector<nri::DescriptorSetDesc> allSets;
+    for (auto& [space, ranges] : setBuilders) {
+        if (space == 1)
+            continue;
+        rangeStorage.push_back(std::move(ranges));
+        allSets.push_back({ space, rangeStorage.back().data(), (uint32_t)rangeStorage.back().size(), nri::DescriptorSetBits::NONE });
+    }
+
+    // bindless set (space 1)
+    nri::DescriptorRangeDesc bindlessRanges[6] = {};
+    nri::DescriptorRangeBits bindlessFlags =
+        nri::DescriptorRangeBits::PARTIALLY_BOUND | nri::DescriptorRangeBits::ARRAY | nri::DescriptorRangeBits::ALLOW_UPDATE_AFTER_SET;
+
+    // 0 = textures
+    bindlessRanges[0] = { 0, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::TEXTURE, nri::StageBits::ALL, bindlessFlags };
+
+    // 1 = samplers
+    bindlessRanges[1] = { isD3D12 ? 0u : 1u, 4, nri::DescriptorType::SAMPLER, nri::StageBits::ALL, bindlessFlags };
+
+    // 2 = buffers
+    bindlessRanges[2] = { isD3D12 ? RFX_MAX_BINDLESS_TEXTURES : 2u, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::STRUCTURED_BUFFER,
+                          nri::StageBits::ALL, bindlessFlags };
+
+    // 3 = RW buffers
+    bindlessRanges[3] = { isD3D12 ? 0u : 3u, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::STORAGE_STRUCTURED_BUFFER, nri::StageBits::ALL,
+                          bindlessFlags };
+
+    // 4 = RW textures
+    bindlessRanges[4] = { isD3D12 ? RFX_MAX_BINDLESS_TEXTURES : 4u, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::STORAGE_TEXTURE,
+                          nri::StageBits::ALL, bindlessFlags };
+
+    uint32_t bindlessRangeCount = 5;
+
+    if (hasRT) {
+        // 5 = AS
+        bindlessRanges[5] = { isD3D12 ? (RFX_MAX_BINDLESS_TEXTURES * 2) : 5u, 2048, nri::DescriptorType::ACCELERATION_STRUCTURE,
+                              nri::StageBits::ALL, bindlessFlags };
+        bindlessRangeCount = 6;
+    }
+
+    allSets.push_back({ 1, bindlessRanges, bindlessRangeCount, nri::DescriptorSetBits::ALLOW_UPDATE_AFTER_SET });
+
+    impl->bindlessSetIndex = (uint32_t)allSets.size() - 1;
+    impl->descriptorSetCount = (uint32_t)allSets.size();
+
+    nri::PipelineLayoutDesc layoutDesc = {};
+    layoutDesc.descriptorSets = allSets.data();
+    layoutDesc.descriptorSetNum = impl->descriptorSetCount;
+    layoutDesc.rootConstants = impl->rootConstants.data();
+    layoutDesc.rootConstantNum = (uint32_t)impl->rootConstants.size();
+    layoutDesc.rootSamplers = impl->rootSamplers.data();
+    layoutDesc.rootSamplerNum = (uint32_t)impl->rootSamplers.size();
+    layoutDesc.shaderStages = impl->stageMask;
+    layoutDesc.flags = nri::PipelineLayoutBits::IGNORE_GLOBAL_SPIRV_OFFSETS;
+
+    return (CORE.NRI.CreatePipelineLayout(*CORE.NRIDevice, layoutDesc, impl->pipelineLayout) == nri::Result::SUCCESS);
+}
+
 static RfxShader CompileShaderInternal(
     const char* path /* nullable */, const char* sourceCode /* nullable */, const char** defines, int numDefines, const char** includeDirs,
     int numIncludeDirs
@@ -1938,9 +2288,26 @@ static RfxShader CompileShaderInternal(
     RFX_ASSERT(numDefines % 2 == 0 && "rfxCompileShader: Number of defines must be even");
     RFX_ASSERT((sourceCode != nullptr || path != nullptr) && "rfxCompileShader: Source code or path must be provided");
 
+    std::lock_guard<std::mutex> compileLock(CORE.ShaderCompileMutex);
+
     nri::GraphicsAPI graphicsAPI = CORE.NRI.GetDeviceDesc(*CORE.NRIDevice).graphicsAPI;
     bool isD3D12 = (graphicsAPI == nri::GraphicsAPI::D3D12);
     bool hasRT = (CORE.FeatureSupportFlags & RFX_FEATURE_RAY_TRACING) != 0;
+
+    // check cache
+    uint64_t hash = 0;
+    if (CORE.ShaderCacheEnabled) {
+        hash = ComputeShaderHash(path, sourceCode, defines, numDefines, includeDirs, numIncludeDirs, isD3D12);
+        RfxShaderImpl* cached = TryLoadFromCache(hash);
+        if (cached) {
+            if (CreatePipelineLayoutFromImpl(cached, isD3D12, hasRT)) {
+                if (path)
+                    cached->filepath = path;
+                return (RfxShader)cached;
+            }
+            delete cached;
+        }
+    }
 
     // setup compiler session
     std::vector<slang::CompilerOptionEntry> sessionOpts;
@@ -2045,9 +2412,7 @@ static RfxShader CompileShaderInternal(
     impl->stageMask = actualShaderStages;
 
     // reflection
-    std::vector<nri::RootConstantDesc> rootConstants;
-    std::vector<nri::RootSamplerDesc> rootSamplers;
-    std::map<uint32_t, std::vector<nri::DescriptorRangeDesc>> setBuilders;
+    std::map<uint32_t, uint32_t> setRangeCounts;
 
     for (uint32_t j = 0; j < layout->getParameterCount(); j++) {
         slang::VariableLayoutReflection* par = layout->getParameterByIndex(j);
@@ -2062,7 +2427,7 @@ static RfxShader CompileShaderInternal(
             uint32_t size = (uint32_t)typeLayout->getElementTypeLayout()->getSize();
 
             bool found = false;
-            for (auto& existing : rootConstants) {
+            for (auto& existing : impl->rootConstants) {
                 if (existing.registerIndex == 0) {
                     existing.size = std::max(existing.size, size);
                     existing.shaderStages |= actualShaderStages;
@@ -2076,7 +2441,7 @@ static RfxShader CompileShaderInternal(
                 rc.registerIndex = 0;
                 rc.size = size;
                 rc.shaderStages = actualShaderStages;
-                rootConstants.push_back(rc);
+                impl->rootConstants.push_back(rc);
             }
         } else if (category == slang::ParameterCategory::ConstantBuffer) {
             // handle UBOs
@@ -2084,7 +2449,7 @@ static RfxShader CompileShaderInternal(
             if (binding == 0) {
                 uint32_t size = (uint32_t)typeLayout->getElementTypeLayout()->getSize();
                 bool found = false;
-                for (auto& existing : rootConstants) {
+                for (auto& existing : impl->rootConstants) {
                     if (existing.registerIndex == 0) {
                         existing.size = std::max(existing.size, size);
                         existing.shaderStages |= actualShaderStages;
@@ -2097,18 +2462,13 @@ static RfxShader CompileShaderInternal(
                     rc.registerIndex = 0;
                     rc.size = size;
                     rc.shaderStages = actualShaderStages;
-                    rootConstants.push_back(rc);
+                    impl->rootConstants.push_back(rc);
                 }
             } else {
                 // descriptor table UBO
-                nri::DescriptorRangeDesc range = {};
-                range.baseRegisterIndex = binding;
-                range.descriptorNum = 1;
-                range.descriptorType = nri::DescriptorType::CONSTANT_BUFFER;
-                range.shaderStages = actualShaderStages;
                 uint32_t space = par->getBindingSpace();
-                setBuilders[space].push_back(range);
-                impl->bindings.push_back({ space, (uint32_t)setBuilders[space].size() - 1, binding, 1, range.descriptorType });
+                uint32_t rangeIdx = setRangeCounts[space]++;
+                impl->bindings.push_back({ space, rangeIdx, binding, 1, nri::DescriptorType::CONSTANT_BUFFER });
             }
         } else if (category == slang::ParameterCategory::DescriptorTableSlot) {
             // handle descriptors (texture, buffer, sampler)
@@ -2128,80 +2488,18 @@ static RfxShader CompileShaderInternal(
                     rs.desc = samplerDesc;
                     rs.registerIndex = binding;
                     rs.shaderStages = actualShaderStages;
-                    rootSamplers.push_back(rs);
+                    impl->rootSamplers.push_back(rs);
                     continue;
                 }
             }
 
-            nri::DescriptorRangeDesc range = {};
-            range.baseRegisterIndex = binding;
-            range.descriptorNum = 1;
-            range.descriptorType = GetDescriptorType(typeLayout);
-            range.shaderStages = actualShaderStages;
-
-            setBuilders[space].push_back(range);
-            impl->bindings.push_back({ space, (uint32_t)setBuilders[space].size() - 1, binding, 1, range.descriptorType });
+            nri::DescriptorType type = GetDescriptorType(typeLayout);
+            uint32_t rangeIdx = setRangeCounts[space]++;
+            impl->bindings.push_back({ space, rangeIdx, binding, 1, type });
         }
     }
 
-    // pipeline layout
-    std::vector<nri::DescriptorSetDesc> allSets;
-    std::vector<std::vector<nri::DescriptorRangeDesc>> rangeStorage;
-
-    for (auto& [space, ranges] : setBuilders) {
-        if (space == 1)
-            continue;
-        rangeStorage.push_back(std::move(ranges));
-        allSets.push_back({ space, rangeStorage.back().data(), (uint32_t)rangeStorage.back().size(), nri::DescriptorSetBits::NONE });
-    }
-
-    nri::DescriptorRangeDesc bindlessRanges[6] = {};
-    nri::DescriptorRangeBits bindlessFlags =
-        nri::DescriptorRangeBits::PARTIALLY_BOUND | nri::DescriptorRangeBits::ARRAY | nri::DescriptorRangeBits::ALLOW_UPDATE_AFTER_SET;
-
-    // 0 = textures
-    bindlessRanges[0] = { 0, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::TEXTURE, nri::StageBits::ALL, bindlessFlags };
-
-    // 1 = samplers
-    bindlessRanges[1] = { isD3D12 ? 0u : 1u, 4, nri::DescriptorType::SAMPLER, nri::StageBits::ALL, bindlessFlags };
-
-    // 2 = buffers
-    bindlessRanges[2] = { isD3D12 ? RFX_MAX_BINDLESS_TEXTURES : 2u, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::STRUCTURED_BUFFER,
-                          nri::StageBits::ALL, bindlessFlags };
-
-    // 3 = RW buffers
-    bindlessRanges[3] = { isD3D12 ? 0u : 3u, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::STORAGE_STRUCTURED_BUFFER, nri::StageBits::ALL,
-                          bindlessFlags };
-
-    // 4 = RW textures
-    bindlessRanges[4] = { isD3D12 ? RFX_MAX_BINDLESS_TEXTURES : 4u, RFX_MAX_BINDLESS_TEXTURES, nri::DescriptorType::STORAGE_TEXTURE,
-                          nri::StageBits::ALL, bindlessFlags };
-
-    uint32_t bindlessRangeCount = 5;
-
-    if (hasRT) {
-        // 5 = AS
-        bindlessRanges[5] = { isD3D12 ? (RFX_MAX_BINDLESS_TEXTURES * 2) : 5u, 2048, nri::DescriptorType::ACCELERATION_STRUCTURE,
-                              nri::StageBits::ALL, bindlessFlags };
-        bindlessRangeCount = 6;
-    }
-
-    allSets.push_back({ 1, bindlessRanges, bindlessRangeCount, nri::DescriptorSetBits::ALLOW_UPDATE_AFTER_SET });
-
-    impl->bindlessSetIndex = (uint32_t)allSets.size() - 1;
-    impl->descriptorSetCount = (uint32_t)allSets.size();
-
-    nri::PipelineLayoutDesc layoutDesc = {};
-    layoutDesc.descriptorSets = allSets.data();
-    layoutDesc.descriptorSetNum = impl->descriptorSetCount;
-    layoutDesc.rootConstants = rootConstants.data();
-    layoutDesc.rootConstantNum = (uint32_t)rootConstants.size();
-    layoutDesc.rootSamplers = rootSamplers.data();
-    layoutDesc.rootSamplerNum = (uint32_t)rootSamplers.size();
-    layoutDesc.shaderStages = actualShaderStages;
-    layoutDesc.flags = nri::PipelineLayoutBits::IGNORE_GLOBAL_SPIRV_OFFSETS;
-
-    if (CORE.NRI.CreatePipelineLayout(*CORE.NRIDevice, layoutDesc, impl->pipelineLayout) != nri::Result::SUCCESS) {
+    if (!CreatePipelineLayoutFromImpl(impl, isD3D12, hasRT)) {
         fprintf(stderr, "Error: Failed to create pipeline layout.\n");
         delete impl;
         return nullptr;
@@ -2242,6 +2540,11 @@ static RfxShader CompileShaderInternal(
     if (impl->stages.empty()) {
         delete impl;
         return nullptr;
+    }
+
+    // save to cache
+    if (CORE.ShaderCacheEnabled) {
+        SaveToCache(hash, impl);
     }
 
     return (RfxShader)impl;
@@ -2318,6 +2621,51 @@ void rfxWatchShader(RfxShader shader, bool watch) {
     };
 
     impl->watcher = std::make_unique<wtr::watch>(watchDir, callback);
+}
+
+void rfxSetShaderCacheEnabled(bool enabled) {
+    CORE.ShaderCacheEnabled = enabled;
+}
+
+void rfxSetShaderCachePath(const char* path) {
+    std::lock_guard<std::mutex> lock(CORE.ShaderCacheMutex);
+    if (path)
+        CORE.ShaderCachePath = path;
+}
+
+void rfxSetShaderCacheCallbacks(RfxShaderCacheLoadCallback load, RfxShaderCacheSaveCallback save, void* user) {
+    std::lock_guard<std::mutex> lock(CORE.ShaderCacheMutex);
+    CORE.CacheLoadCb = load;
+    CORE.CacheSaveCb = save;
+    CORE.CacheUserPtr = user;
+}
+
+void rfxAddVirtualShaderFile(const char* filename, const char* content) {
+    s_FileSystem.addFile(filename, content);
+}
+
+void rfxRemoveVirtualShaderFile(const char* filename) {
+    s_FileSystem.removeFile(filename);
+}
+
+bool rfxWasShaderCached(RfxShader shader) {
+    if (!shader)
+        return false;
+    return ((RfxShaderImpl*)shader)->fromCache;
+}
+
+void rfxPrecompileShader(
+    const char* sourceOrPath, const char** defines, int numDefines, const char** includeDirs, int numIncludeDirs, bool fromMemory
+) {
+    rfxSetShaderCacheEnabled(true);
+    RfxShader s = nullptr;
+    if (fromMemory) {
+        s = rfxCompileShaderMem(sourceOrPath, defines, numDefines, includeDirs, numIncludeDirs);
+    } else {
+        s = rfxCompileShader(sourceOrPath, defines, numDefines, includeDirs, numIncludeDirs);
+    }
+    if (s)
+        rfxDestroyShader(s);
 }
 
 static CachedGraphics CacheGraphicsDesc(const RfxPipelineDesc* src) {

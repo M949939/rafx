@@ -27,6 +27,7 @@ It is based on the [NVIDIA Render Interface (NRI)](https://github.com/NVIDIA-RTX
 - Low latency support (aka NVIDIA Reflex)
 - GPU profiler, timeline annotations (GAPI, Nsight, PIX), resource naming
 - ImGui extension `rfxCmdDrawImGui`
+- Shader cache / precompilation
 - Lots of [examples](./examples) to get you started
 
 ## Examples

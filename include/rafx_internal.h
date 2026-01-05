@@ -194,6 +194,7 @@ struct RfxShaderImpl {
     nri::StageBits stageMask;
     uint32_t bindlessSetIndex;
 
+    bool fromCache = false;
     struct BindingRange {
         uint32_t setIndex;
         uint32_t rangeIndex;
@@ -202,6 +203,8 @@ struct RfxShaderImpl {
         nri::DescriptorType type;
     };
     std::vector<BindingRange> bindings;
+    std::vector<nri::RootConstantDesc> rootConstants;
+    std::vector<nri::RootSamplerDesc> rootSamplers;
 
     std::string filepath;
     std::vector<std::string> defines; // k,v,k,v,...
@@ -504,6 +507,17 @@ struct CoreData {
 
     std::mutex HotReloadMutex;
     std::set<RfxShader> ShadersToReload;
+
+    // vfs, shader cache
+    bool ShaderCacheEnabled = false;
+    std::string ShaderCachePath;
+    RfxShaderCacheLoadCallback CacheLoadCb = nullptr;
+    RfxShaderCacheSaveCallback CacheSaveCb = nullptr;
+    void* CacheUserPtr = nullptr;
+
+    std::mutex ShaderCacheMutex;
+    std::mutex ShaderCompileMutex;
+    std::mutex VirtualFSMutex;
 };
 
 extern CoreData CORE;
