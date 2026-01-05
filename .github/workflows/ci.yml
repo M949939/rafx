@@ -32,11 +32,6 @@ jobs:
             artifact_name: rafx_release_macos_arm64.zip
             cmake_args: >
               -DCMAKE_BUILD_TYPE=Release
-          # intel
-          - os: macos-latest-large
-            artifact_name: rafx_release_macos_x64.zip
-            cmake_args: >
-              -DCMAKE_BUILD_TYPE=Release
 
     steps:
       - name: Checkout repository
