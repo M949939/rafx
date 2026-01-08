@@ -297,7 +297,7 @@ void Backend_PollEvents() {
         case SDL_EVENT_TEXT_INPUT: {
             const char* ptr = event.text.text;
             uint32_t codepoint;
-            while ((codepoint = SDL_StepUTF8(&ptr, NULL)) != 0) {
+            while ((codepoint = SDL_StepUTF8(&ptr, nullptr)) != 0) {
                 if (codepoint != SDL_INVALID_UNICODE_CODEPOINT) {
                     Input_PushCharPressed(codepoint);
                 }

@@ -7,6 +7,8 @@
 
 #if (RAFX_PLATFORM == RAFX_COCOA)
 #    include <MetalUtility/MetalUtility.h>
+#elif (RAFX_PLATFORM == RAFX_WINDOWS)
+typedef HRESULT (WINAPI * PFN_DwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD);
 #endif
 // clang-format on
 
@@ -112,6 +114,27 @@ static void GlfwFreeWrapper(void* ptr, void* user) {
     RfxFree(ptr);
 }
 
+// clang-format off
+#if (RAFX_PLATFORM == RAFX_WINDOWS)
+bool Win32_SystemIsDarkMode(void) {
+    uint32_t lightMode = 1;
+    DWORD len = sizeof(lightMode);
+
+    RegGetValueW(
+        HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", L"AppsUseLightTheme", RRF_RT_REG_DWORD,
+        NULL, &lightMode, &len
+    );
+
+    return (lightMode == 0);
+}
+
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#    define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
+
+#endif
+// clang-format on
+
 bool Backend_CreateWindow(const char* title, int width, int height) {
     glfwSetErrorCallback(GLFW_ErrorCallback);
 
@@ -140,6 +163,25 @@ bool Backend_CreateWindow(const char* title, int width, int height) {
         return false;
     }
     CORE.WindowHandle = win;
+
+    // clang-format off
+#if (RAFX_PLATFORM == RAFX_WINDOWS)
+    // https://discourse.glfw.org/t/dark-theme-titlebar/2537/2
+    if (Win32_SystemIsDarkMode()) {
+        HWND hwnd = glfwGetWin32Window(win);
+        BOOL value = TRUE;
+        HMODULE hDwmApi = LoadLibraryW(L"dwmapi.dll");
+        if (hDwmApi) {
+            PFN_DwmSetWindowAttribute pfnDwmSetWindowAttribute =
+                (PFN_DwmSetWindowAttribute)GetProcAddress(hDwmApi, "DwmSetWindowAttribute");
+            if (pfnDwmSetWindowAttribute) {
+                pfnDwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
+            }
+            FreeLibrary(hDwmApi);
+        }
+    }
+#endif
+    // clang-format on
 
     // handle centering
     if (!monitor && (CORE.WindowFlags & RFX_WINDOW_CENTERED)) {
