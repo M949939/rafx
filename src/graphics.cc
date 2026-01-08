@@ -725,6 +725,262 @@ static nri::DescriptorType GetDescriptorType(slang::TypeLayoutReflection* typeLa
     return nri::DescriptorType::TEXTURE;
 }
 
+struct GraphicsPipelineContext {
+    RfxVector<nri::ColorAttachmentDesc> colorDescs;
+    RfxVector<nri::ShaderDesc> shaderDescs;
+    RfxVector<nri::VertexAttributeDesc> vertexAttribs;
+    nri::VertexInputDesc vertexInput = {};
+    nri::VertexStreamDesc vertexStream = { 0, nri::VertexStreamStepRate::PER_VERTEX };
+    nri::MultisampleDesc multisample = {};
+};
+
+static void
+SetupGraphicsPipeline(RfxPipelineImpl* impl, const RfxPipelineDesc* desc, nri::GraphicsPipelineDesc& gpd, GraphicsPipelineContext& ctx) {
+    gpd.pipelineLayout = impl->shader->pipelineLayout;
+    gpd.inputAssembly.topology = ToNRITopology(desc->topology);
+    gpd.inputAssembly.tessControlPointNum = (uint8_t)desc->patchControlPoints;
+
+    gpd.rasterization.fillMode = desc->wireframe ? nri::FillMode::WIREFRAME : nri::FillMode::SOLID;
+    gpd.rasterization.cullMode = (desc->cullMode == RFX_CULL_BACK)
+                                     ? nri::CullMode::BACK
+                                     : ((desc->cullMode == RFX_CULL_FRONT) ? nri::CullMode::FRONT : nri::CullMode::NONE);
+    gpd.rasterization.frontCounterClockwise = true;
+    gpd.rasterization.depthBias.constant = desc->depthBiasConstant;
+    gpd.rasterization.depthBias.clamp = desc->depthBiasClamp;
+    gpd.rasterization.depthBias.slope = desc->depthBiasSlope;
+    gpd.rasterization.shadingRate = desc->shadingRate;
+
+    uint8_t samples = (desc->sampleCount > 0) ? (uint8_t)desc->sampleCount : (uint8_t)CORE.SampleCount;
+    if (samples == 0)
+        samples = 1;
+
+    ctx.multisample.sampleNum = (nri::Sample_t)samples;
+    ctx.multisample.sampleMask = nri::ALL;
+    gpd.multisample = &ctx.multisample;
+
+    if (desc->attachmentCount > 0 && desc->attachments) {
+        ctx.colorDescs.resize(desc->attachmentCount);
+        for (uint32_t i = 0; i < desc->attachmentCount; ++i) {
+            nri::ColorAttachmentDesc& cad = ctx.colorDescs[i];
+            const RfxAttachmentDesc& src = desc->attachments[i];
+            cad.format = ToNRIFormat(src.format);
+
+            nri::ColorWriteBits mask = (nri::ColorWriteBits)src.blend.writeMask;
+            cad.colorWriteMask = (mask == nri::ColorWriteBits::NONE) ? nri::ColorWriteBits::RGBA : mask;
+
+            cad.blendEnabled = src.blend.blendEnabled;
+            cad.colorBlend.srcFactor = ToNRIBlendFactor(src.blend.srcColor);
+            cad.colorBlend.dstFactor = ToNRIBlendFactor(src.blend.dstColor);
+            cad.colorBlend.op = ToNRIBlendOp(src.blend.colorOp);
+            cad.alphaBlend.srcFactor = ToNRIBlendFactor(src.blend.srcAlpha);
+            cad.alphaBlend.dstFactor = ToNRIBlendFactor(src.blend.dstAlpha);
+            cad.alphaBlend.op = ToNRIBlendOp(src.blend.alphaOp);
+        }
+    } else if (desc->colorFormat != RFX_FORMAT_UNKNOWN) {
+        ctx.colorDescs.resize(1);
+        nri::ColorAttachmentDesc& cad = ctx.colorDescs[0];
+        cad.format = ToNRIFormat(desc->colorFormat);
+
+        nri::ColorWriteBits mask = (nri::ColorWriteBits)desc->blendState.writeMask;
+        cad.colorWriteMask = (mask == nri::ColorWriteBits::NONE) ? nri::ColorWriteBits::RGBA : mask;
+
+        cad.blendEnabled = desc->blendState.blendEnabled;
+        cad.colorBlend.srcFactor = ToNRIBlendFactor(desc->blendState.srcColor);
+        cad.colorBlend.dstFactor = ToNRIBlendFactor(desc->blendState.dstColor);
+        cad.colorBlend.op = ToNRIBlendOp(desc->blendState.colorOp);
+        cad.alphaBlend.srcFactor = ToNRIBlendFactor(desc->blendState.srcAlpha);
+        cad.alphaBlend.dstFactor = ToNRIBlendFactor(desc->blendState.dstAlpha);
+        cad.alphaBlend.op = ToNRIBlendOp(desc->blendState.alphaOp);
+    }
+
+    if (!ctx.colorDescs.empty()) {
+        gpd.outputMerger.colors = ctx.colorDescs.data();
+        gpd.outputMerger.colorNum = (uint32_t)ctx.colorDescs.size();
+    }
+
+    if (desc->depthFormat != RFX_FORMAT_UNKNOWN) {
+        gpd.outputMerger.depthStencilFormat = ToNRIFormat(desc->depthFormat);
+        if (desc->depthCompareOp != 0) {
+            gpd.outputMerger.depth.compareOp = ToNRICompareOp(desc->depthCompareOp);
+        } else {
+            gpd.outputMerger.depth.compareOp = desc->depthTest ? nri::CompareOp::LESS : nri::CompareOp::NONE;
+        }
+        gpd.outputMerger.depth.write = desc->depthWrite;
+        gpd.outputMerger.depth.boundsTest = desc->depthBoundsTest;
+
+        if (desc->stencil.enabled) {
+            gpd.outputMerger.stencil.front.compareOp = ToNRICompareOp(desc->stencil.front.compareOp);
+            gpd.outputMerger.stencil.front.failOp = ToNRIStencilOp(desc->stencil.front.failOp);
+            gpd.outputMerger.stencil.front.passOp = ToNRIStencilOp(desc->stencil.front.passOp);
+            gpd.outputMerger.stencil.front.depthFailOp = ToNRIStencilOp(desc->stencil.front.depthFailOp);
+            gpd.outputMerger.stencil.front.compareMask = desc->stencil.readMask;
+            gpd.outputMerger.stencil.front.writeMask = desc->stencil.writeMask;
+
+            gpd.outputMerger.stencil.back.compareOp = ToNRICompareOp(desc->stencil.back.compareOp);
+            gpd.outputMerger.stencil.back.failOp = ToNRIStencilOp(desc->stencil.back.failOp);
+            gpd.outputMerger.stencil.back.passOp = ToNRIStencilOp(desc->stencil.back.passOp);
+            gpd.outputMerger.stencil.back.depthFailOp = ToNRIStencilOp(desc->stencil.back.depthFailOp);
+            gpd.outputMerger.stencil.back.compareMask = desc->stencil.readMask;
+            gpd.outputMerger.stencil.back.writeMask = desc->stencil.writeMask;
+        }
+    }
+
+    if (desc->viewMask != 0) {
+        gpd.outputMerger.viewMask = desc->viewMask;
+        gpd.outputMerger.multiview = nri::Multiview::FLEXIBLE;
+    }
+
+    bool explicitVertex = (desc->vsEntryPoint != nullptr);
+
+    for (auto& s : impl->shader->stages) {
+        if (s.stageBits & nri::StageBits::VERTEX_SHADER) {
+            if (desc->vsEntryPoint && s.sourceEntryPoint != desc->vsEntryPoint)
+                continue;
+            ctx.shaderDescs.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
+        } else if (s.stageBits & nri::StageBits::FRAGMENT_SHADER) {
+            if (explicitVertex && desc->psEntryPoint == nullptr)
+                continue;
+            if (desc->psEntryPoint && s.sourceEntryPoint != desc->psEntryPoint)
+                continue;
+            ctx.shaderDescs.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
+        } else if (s.stageBits & nri::StageBits::GRAPHICS_SHADERS) {
+            ctx.shaderDescs.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
+        }
+    }
+
+    gpd.shaders = ctx.shaderDescs.data();
+    gpd.shaderNum = (uint32_t)ctx.shaderDescs.size();
+
+    bool hasVertexStage = (impl->shader->stageMask & nri::StageBits::VERTEX_SHADER);
+
+    if (desc->vertexLayout && hasVertexStage) {
+        for (int i = 0; i < desc->vertexLayoutCount; ++i) {
+            const auto& el = desc->vertexLayout[i];
+            nri::VertexAttributeDesc ad = {};
+            ad.d3d = { el.semanticName ? el.semanticName : "POSITION", 0 };
+            ad.vk = { el.location };
+            ad.offset = el.offset;
+            ad.format = ToNRIFormat(el.format);
+            ad.streamIndex = 0;
+            ctx.vertexAttribs.push_back(ad);
+        }
+        ctx.vertexInput.attributes = ctx.vertexAttribs.data();
+        ctx.vertexInput.attributeNum = (uint8_t)ctx.vertexAttribs.size();
+        ctx.vertexInput.streams = &ctx.vertexStream;
+        ctx.vertexInput.streamNum = 1;
+        gpd.vertexInput = &ctx.vertexInput;
+    }
+}
+
+static void SetupComputePipeline(RfxPipelineImpl* impl, const RfxComputePipelineDesc* desc, nri::ComputePipelineDesc& cpd) {
+    cpd.pipelineLayout = impl->shader->pipelineLayout;
+    for (auto& s : impl->shader->stages) {
+        if (s.stageBits & nri::StageBits::COMPUTE_SHADER) {
+            if (desc->entryPoint && s.sourceEntryPoint != desc->entryPoint)
+                continue;
+
+            cpd.shader = { s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() };
+            break;
+        }
+    }
+}
+
+static void UpdateBindlessDescriptor(uint32_t rangeIndex, uint32_t descriptorIndex, nri::Descriptor* descriptor) {
+    nri::UpdateDescriptorRangeDesc update = {};
+    update.descriptorSet = CORE.Bindless.globalDescriptorSet;
+    update.rangeIndex = rangeIndex;
+    update.baseDescriptor = descriptorIndex;
+    update.descriptorNum = 1;
+    update.descriptors = &descriptor;
+    CORE.NRI.UpdateDescriptorRanges(&update, 1);
+}
+
+static void CreateTextureDescriptors(
+    RfxTextureImpl* impl, RfxTextureUsageFlags usage, uint32_t mipOffset, uint32_t mipNum, uint32_t layerOffset, uint32_t layerNum
+) {
+    // SRV
+    if ((usage & RFX_TEXTURE_USAGE_SHADER_RESOURCE) && impl->sampleCount == 1) {
+        if (impl->bindlessIndex == (uint32_t)-1)
+            impl->bindlessIndex = AllocTextureSlot();
+
+        bool is3D = (CORE.NRI.GetTextureDesc(*impl->texture).type == nri::TextureType::TEXTURE_3D);
+
+        if (is3D) {
+            nri::Texture3DViewDesc vd = {};
+            vd.texture = impl->texture;
+            vd.format = impl->format;
+            vd.viewType = nri::Texture3DViewType::SHADER_RESOURCE;
+            vd.mipOffset = (nri::Dim_t)mipOffset;
+            vd.mipNum = (nri::Dim_t)mipNum;
+            vd.sliceOffset = (nri::Dim_t)layerOffset;
+            vd.sliceNum = (nri::Dim_t)layerNum;
+            NRI_CHECK(CORE.NRI.CreateTexture3DView(vd, impl->descriptor));
+        } else {
+            nri::Texture2DViewDesc vd = {};
+            vd.texture = impl->texture;
+            vd.format = impl->format;
+            vd.viewType = nri::Texture2DViewType::SHADER_RESOURCE;
+            vd.mipOffset = (nri::Dim_t)mipOffset;
+            vd.mipNum = (nri::Dim_t)mipNum;
+            vd.layerOffset = (nri::Dim_t)layerOffset;
+            vd.layerNum = (nri::Dim_t)layerNum;
+            NRI_CHECK(CORE.NRI.CreateTexture2DView(vd, impl->descriptor));
+        }
+
+        UpdateBindlessDescriptor(0, impl->bindlessIndex, impl->descriptor);
+    }
+
+    // UAV
+    if (usage & RFX_TEXTURE_USAGE_STORAGE) {
+        if (impl->bindlessIndex == (uint32_t)-1)
+            impl->bindlessIndex = AllocTextureSlot();
+
+        bool is3D = (CORE.NRI.GetTextureDesc(*impl->texture).type == nri::TextureType::TEXTURE_3D);
+
+        if (is3D) {
+            nri::Texture3DViewDesc uav = {};
+            uav.texture = impl->texture;
+            uav.format = impl->format;
+            uav.viewType = nri::Texture3DViewType::SHADER_RESOURCE_STORAGE;
+            uav.mipOffset = (nri::Dim_t)mipOffset;
+            uav.mipNum = (nri::Dim_t)mipNum;
+            uav.sliceOffset = (nri::Dim_t)layerOffset;
+            uav.sliceNum = (nri::Dim_t)layerNum;
+            NRI_CHECK(CORE.NRI.CreateTexture3DView(uav, impl->descriptorUAV));
+        } else {
+            nri::Texture2DViewDesc uav = {};
+            uav.texture = impl->texture;
+            uav.format = impl->format;
+            uav.viewType = nri::Texture2DViewType::SHADER_RESOURCE_STORAGE;
+            uav.mipOffset = (nri::Dim_t)mipOffset;
+            uav.mipNum = (nri::Dim_t)mipNum;
+            uav.layerOffset = (nri::Dim_t)layerOffset;
+            uav.layerNum = (nri::Dim_t)layerNum;
+            NRI_CHECK(CORE.NRI.CreateTexture2DView(uav, impl->descriptorUAV));
+        }
+
+        UpdateBindlessDescriptor(4, impl->bindlessIndex, impl->descriptorUAV);
+    }
+
+    // RTV / DSV
+    if (usage & (RFX_TEXTURE_USAGE_RENDER_TARGET | RFX_TEXTURE_USAGE_DEPTH_STENCIL)) {
+        nri::Texture2DViewDesc avd = {};
+        avd.texture = impl->texture;
+        avd.format = impl->format;
+        if (usage & RFX_TEXTURE_USAGE_DEPTH_STENCIL)
+            avd.viewType = nri::Texture2DViewType::DEPTH_STENCIL_ATTACHMENT;
+        else
+            avd.viewType = nri::Texture2DViewType::COLOR_ATTACHMENT;
+
+        avd.mipOffset = (nri::Dim_t)mipOffset;
+        avd.mipNum = (nri::Dim_t)mipNum;
+        avd.layerOffset = (nri::Dim_t)layerOffset;
+        avd.layerNum = (nri::Dim_t)layerNum;
+
+        NRI_CHECK(CORE.NRI.CreateTexture2DView(avd, impl->descriptorAttachment));
+    }
+}
+
 //
 // Barrier batcher
 //
@@ -1446,14 +1702,7 @@ RfxBuffer rfxCreateBuffer(size_t size, size_t stride, RfxBufferUsageFlags usage,
         uavDesc.size = size;
         uavDesc.structureStride = 0;
         NRI_CHECK(CORE.NRI.CreateBufferView(uavDesc, impl->descriptorUAV));
-
-        nri::UpdateDescriptorRangeDesc uavUpdate = {};
-        uavUpdate.descriptorSet = CORE.Bindless.globalDescriptorSet;
-        uavUpdate.rangeIndex = 3;
-        uavUpdate.baseDescriptor = impl->bindlessIndex;
-        uavUpdate.descriptorNum = 1;
-        uavUpdate.descriptors = &impl->descriptorUAV;
-        CORE.NRI.UpdateDescriptorRanges(&uavUpdate, 1);
+        UpdateBindlessDescriptor(3, impl->bindlessIndex, impl->descriptorUAV);
     }
 
     nri::BufferViewDesc vd = {};
@@ -1463,14 +1712,7 @@ RfxBuffer rfxCreateBuffer(size_t size, size_t stride, RfxBufferUsageFlags usage,
     vd.size = size;
     vd.structureStride = 0;
     NRI_CHECK(CORE.NRI.CreateBufferView(vd, impl->descriptorSRV));
-
-    nri::UpdateDescriptorRangeDesc update = {};
-    update.descriptorSet = CORE.Bindless.globalDescriptorSet;
-    update.rangeIndex = 2;
-    update.baseDescriptor = impl->bindlessIndex;
-    update.descriptorNum = 1;
-    update.descriptors = &impl->descriptorSRV;
-    CORE.NRI.UpdateDescriptorRanges(&update, 1);
+    UpdateBindlessDescriptor(2, impl->bindlessIndex, impl->descriptorSRV);
 
     // init
     if (initialData) {
@@ -1555,7 +1797,7 @@ RfxTexture rfxCreateTextureEx(const RfxTextureDesc* desc) {
     impl->width = desc->width;
     impl->height = desc->height;
     impl->sampleCount = (uint32_t)sampleCount;
-    impl->bindlessIndex = AllocTextureSlot();
+    impl->bindlessIndex = (uint32_t)-1; // will be alloced in CreateTextureDescriptors if needed
 
     impl->mipOffset = 0;
     impl->mipNum = mips;
@@ -1595,79 +1837,8 @@ RfxTexture rfxCreateTextureEx(const RfxTextureDesc* desc) {
         [&](const nri::BindTextureMemoryDesc* d, uint32_t n) { return CORE.NRI.BindTextureMemory(d, n); }
     );
 
-    // SRV
-    if (desc->usage & RFX_TEXTURE_USAGE_SHADER_RESOURCE && sampleCount == 1) {
-        if (td.type == nri::TextureType::TEXTURE_3D) {
-            nri::Texture3DViewDesc vd = {};
-            vd.texture = impl->texture;
-            vd.format = impl->format;
-            vd.viewType = nri::Texture3DViewType::SHADER_RESOURCE;
-            vd.mipNum = nri::REMAINING;
-            vd.sliceNum = nri::REMAINING;
-            NRI_CHECK(CORE.NRI.CreateTexture3DView(vd, impl->descriptor));
-        } else {
-            nri::Texture2DViewDesc vd = {};
-            vd.texture = impl->texture;
-            vd.format = impl->format;
-            vd.viewType = nri::Texture2DViewType::SHADER_RESOURCE;
-            vd.mipNum = nri::REMAINING;
-            vd.layerNum = nri::REMAINING;
-            NRI_CHECK(CORE.NRI.CreateTexture2DView(vd, impl->descriptor));
-        }
-
-        nri::UpdateDescriptorRangeDesc update = {};
-        update.descriptorSet = CORE.Bindless.globalDescriptorSet;
-        update.rangeIndex = 0;
-        update.baseDescriptor = impl->bindlessIndex;
-        update.descriptorNum = 1;
-        update.descriptors = &impl->descriptor;
-        CORE.NRI.UpdateDescriptorRanges(&update, 1);
-    }
-
-    // UAV
-    if (desc->usage & RFX_TEXTURE_USAGE_STORAGE) {
-        if (td.type == nri::TextureType::TEXTURE_3D) {
-            nri::Texture3DViewDesc uav = {};
-            uav.texture = impl->texture;
-            uav.format = impl->format;
-            uav.viewType = nri::Texture3DViewType::SHADER_RESOURCE_STORAGE;
-            uav.mipNum = nri::REMAINING;
-            uav.sliceNum = nri::REMAINING;
-            NRI_CHECK(CORE.NRI.CreateTexture3DView(uav, impl->descriptorUAV));
-        } else {
-            nri::Texture2DViewDesc uav = {};
-            uav.texture = impl->texture;
-            uav.format = impl->format;
-            uav.viewType = nri::Texture2DViewType::SHADER_RESOURCE_STORAGE;
-            uav.mipNum = nri::REMAINING;
-            uav.layerNum = nri::REMAINING;
-            NRI_CHECK(CORE.NRI.CreateTexture2DView(uav, impl->descriptorUAV));
-        }
-
-        nri::UpdateDescriptorRangeDesc update = {};
-        update.descriptorSet = CORE.Bindless.globalDescriptorSet;
-        update.rangeIndex = 4;
-        update.baseDescriptor = impl->bindlessIndex;
-        update.descriptorNum = 1;
-        update.descriptors = &impl->descriptorUAV;
-        CORE.NRI.UpdateDescriptorRanges(&update, 1);
-    }
-
-    // RTV / DSV
-    if (desc->usage & (RFX_TEXTURE_USAGE_RENDER_TARGET | RFX_TEXTURE_USAGE_DEPTH_STENCIL)) {
-        nri::Texture2DViewDesc avd = {};
-        avd.texture = impl->texture;
-        avd.format = impl->format;
-        if (desc->usage & RFX_TEXTURE_USAGE_DEPTH_STENCIL)
-            avd.viewType = nri::Texture2DViewType::DEPTH_STENCIL_ATTACHMENT;
-        else
-            avd.viewType = nri::Texture2DViewType::COLOR_ATTACHMENT;
-
-        avd.mipNum = nri::REMAINING;
-        avd.layerNum = nri::REMAINING;
-
-        NRI_CHECK(CORE.NRI.CreateTexture2DView(avd, impl->descriptorAttachment));
-    }
+    // SRV, UAV, RTV / DSV
+    CreateTextureDescriptors(impl, desc->usage, 0, nri::REMAINING, 0, nri::REMAINING);
 
     // only transition if we have data to upload
     if (desc->initialData && sampleCount == 1) {
@@ -2744,150 +2915,9 @@ RfxPipeline rfxCreatePipeline(const RfxPipelineDesc* desc) {
     }
 
     nri::GraphicsPipelineDesc gpd = {};
-    gpd.pipelineLayout = impl->shader->pipelineLayout;
-    gpd.inputAssembly.topology = ToNRITopology(desc->topology);
-    gpd.inputAssembly.tessControlPointNum = (uint8_t)desc->patchControlPoints;
+    GraphicsPipelineContext ctx;
+    SetupGraphicsPipeline(impl, desc, gpd, ctx);
 
-    gpd.rasterization.fillMode = desc->wireframe ? nri::FillMode::WIREFRAME : nri::FillMode::SOLID;
-    gpd.rasterization.cullMode = (desc->cullMode == RFX_CULL_BACK)
-                                     ? nri::CullMode::BACK
-                                     : ((desc->cullMode == RFX_CULL_FRONT) ? nri::CullMode::FRONT : nri::CullMode::NONE);
-    gpd.rasterization.frontCounterClockwise = true;
-    gpd.rasterization.depthBias.constant = desc->depthBiasConstant;
-    gpd.rasterization.depthBias.clamp = desc->depthBiasClamp;
-    gpd.rasterization.depthBias.slope = desc->depthBiasSlope;
-    gpd.rasterization.shadingRate = desc->shadingRate;
-
-    uint8_t samples = (desc->sampleCount > 0) ? (uint8_t)desc->sampleCount : (uint8_t)CORE.SampleCount;
-    if (samples == 0)
-        samples = 1;
-
-    nri::MultisampleDesc ms = {};
-    ms.sampleNum = (nri::Sample_t)samples;
-    ms.sampleMask = nri::ALL;
-    gpd.multisample = &ms;
-
-    RfxVector<nri::ColorAttachmentDesc> colorDescs;
-    if (desc->attachmentCount > 0 && desc->attachments) {
-        colorDescs.resize(desc->attachmentCount);
-        for (uint32_t i = 0; i < desc->attachmentCount; ++i) {
-            nri::ColorAttachmentDesc& cad = colorDescs[i];
-            const RfxAttachmentDesc& src = desc->attachments[i];
-            cad.format = ToNRIFormat(src.format);
-
-            nri::ColorWriteBits mask = (nri::ColorWriteBits)src.blend.writeMask;
-            cad.colorWriteMask = (mask == nri::ColorWriteBits::NONE) ? nri::ColorWriteBits::RGBA : mask;
-
-            cad.blendEnabled = src.blend.blendEnabled;
-            cad.colorBlend.srcFactor = ToNRIBlendFactor(src.blend.srcColor);
-            cad.colorBlend.dstFactor = ToNRIBlendFactor(src.blend.dstColor);
-            cad.colorBlend.op = ToNRIBlendOp(src.blend.colorOp);
-            cad.alphaBlend.srcFactor = ToNRIBlendFactor(src.blend.srcAlpha);
-            cad.alphaBlend.dstFactor = ToNRIBlendFactor(src.blend.dstAlpha);
-            cad.alphaBlend.op = ToNRIBlendOp(src.blend.alphaOp);
-        }
-    } else if (desc->colorFormat != RFX_FORMAT_UNKNOWN) {
-        colorDescs.resize(1);
-        nri::ColorAttachmentDesc& cad = colorDescs[0];
-        cad.format = ToNRIFormat(desc->colorFormat);
-
-        nri::ColorWriteBits mask = (nri::ColorWriteBits)desc->blendState.writeMask;
-        cad.colorWriteMask = (mask == nri::ColorWriteBits::NONE) ? nri::ColorWriteBits::RGBA : mask;
-
-        cad.blendEnabled = desc->blendState.blendEnabled;
-        cad.colorBlend.srcFactor = ToNRIBlendFactor(desc->blendState.srcColor);
-        cad.colorBlend.dstFactor = ToNRIBlendFactor(desc->blendState.dstColor);
-        cad.colorBlend.op = ToNRIBlendOp(desc->blendState.colorOp);
-        cad.alphaBlend.srcFactor = ToNRIBlendFactor(desc->blendState.srcAlpha);
-        cad.alphaBlend.dstFactor = ToNRIBlendFactor(desc->blendState.dstAlpha);
-        cad.alphaBlend.op = ToNRIBlendOp(desc->blendState.alphaOp);
-    }
-
-    if (!colorDescs.empty()) {
-        gpd.outputMerger.colors = colorDescs.data();
-        gpd.outputMerger.colorNum = (uint32_t)colorDescs.size();
-    }
-
-    // depth stencil
-    if (desc->depthFormat != RFX_FORMAT_UNKNOWN) {
-        gpd.outputMerger.depthStencilFormat = ToNRIFormat(desc->depthFormat);
-        if (desc->depthCompareOp != 0) {
-            gpd.outputMerger.depth.compareOp = ToNRICompareOp(desc->depthCompareOp);
-        } else {
-            gpd.outputMerger.depth.compareOp = desc->depthTest ? nri::CompareOp::LESS : nri::CompareOp::NONE;
-        }
-        gpd.outputMerger.depth.write = desc->depthWrite;
-        gpd.outputMerger.depth.boundsTest = desc->depthBoundsTest;
-
-        if (desc->stencil.enabled) {
-            gpd.outputMerger.stencil.front.compareOp = ToNRICompareOp(desc->stencil.front.compareOp);
-            gpd.outputMerger.stencil.front.failOp = ToNRIStencilOp(desc->stencil.front.failOp);
-            gpd.outputMerger.stencil.front.passOp = ToNRIStencilOp(desc->stencil.front.passOp);
-            gpd.outputMerger.stencil.front.depthFailOp = ToNRIStencilOp(desc->stencil.front.depthFailOp);
-            gpd.outputMerger.stencil.front.compareMask = desc->stencil.readMask;
-            gpd.outputMerger.stencil.front.writeMask = desc->stencil.writeMask;
-
-            gpd.outputMerger.stencil.back.compareOp = ToNRICompareOp(desc->stencil.back.compareOp);
-            gpd.outputMerger.stencil.back.failOp = ToNRIStencilOp(desc->stencil.back.failOp);
-            gpd.outputMerger.stencil.back.passOp = ToNRIStencilOp(desc->stencil.back.passOp);
-            gpd.outputMerger.stencil.back.depthFailOp = ToNRIStencilOp(desc->stencil.back.depthFailOp);
-            gpd.outputMerger.stencil.back.compareMask = desc->stencil.readMask;
-            gpd.outputMerger.stencil.back.writeMask = desc->stencil.writeMask;
-        }
-    }
-
-    if (desc->viewMask != 0) {
-        gpd.outputMerger.viewMask = desc->viewMask;
-        gpd.outputMerger.multiview = nri::Multiview::FLEXIBLE;
-    }
-
-    bool explicitVertex = (desc->vsEntryPoint != nullptr);
-
-    // filter entrypoints
-    RfxVector<nri::ShaderDesc> sds;
-    for (auto& s : impl->shader->stages) {
-        if (s.stageBits & nri::StageBits::VERTEX_SHADER) {
-            if (desc->vsEntryPoint && s.sourceEntryPoint != desc->vsEntryPoint)
-                continue;
-            sds.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
-        } else if (s.stageBits & nri::StageBits::FRAGMENT_SHADER) {
-            if (explicitVertex && desc->psEntryPoint == nullptr)
-                continue;
-            if (desc->psEntryPoint && s.sourceEntryPoint != desc->psEntryPoint)
-                continue;
-            sds.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
-        } else if (s.stageBits & nri::StageBits::GRAPHICS_SHADERS) {
-            sds.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
-        }
-    }
-
-    gpd.shaders = sds.data();
-    gpd.shaderNum = (uint32_t)sds.size();
-
-    nri::VertexInputDesc vid = {};
-    nri::VertexStreamDesc vs = { 0, nri::VertexStreamStepRate::PER_VERTEX };
-    RfxVector<nri::VertexAttributeDesc> vads;
-
-    // check if we actually found a vertex shader before trying to setup input layout
-    bool hasVertexStage = (impl->shader->stageMask & nri::StageBits::VERTEX_SHADER);
-
-    if (desc->vertexLayout && hasVertexStage) {
-        for (int i = 0; i < desc->vertexLayoutCount; ++i) {
-            const auto& el = desc->vertexLayout[i];
-            nri::VertexAttributeDesc ad = {};
-            ad.d3d = { el.semanticName ? el.semanticName : "POSITION", 0 };
-            ad.vk = { el.location };
-            ad.offset = el.offset;
-            ad.format = ToNRIFormat(el.format);
-            ad.streamIndex = 0;
-            vads.push_back(ad);
-        }
-        vid.attributes = vads.data();
-        vid.attributeNum = (uint8_t)vads.size();
-        vid.streams = &vs;
-        vid.streamNum = 1;
-        gpd.vertexInput = &vid;
-    }
     NRI_CHECK(CORE.NRI.CreateGraphicsPipeline(*CORE.NRIDevice, gpd, impl->pipeline));
     return impl;
 }
@@ -2915,16 +2945,7 @@ RfxPipeline rfxCreateComputePipeline(const RfxComputePipelineDesc* desc) {
     }
 
     nri::ComputePipelineDesc cpd = {};
-    cpd.pipelineLayout = impl->shader->pipelineLayout;
-    for (auto& s : impl->shader->stages) {
-        if (s.stageBits & nri::StageBits::COMPUTE_SHADER) {
-            if (desc->entryPoint && s.sourceEntryPoint != desc->entryPoint)
-                continue;
-
-            cpd.shader = { s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() };
-            break; // got entrypoint
-        }
-    }
+    SetupComputePipeline(impl, desc, cpd);
     NRI_CHECK(CORE.NRI.CreateComputePipeline(*CORE.NRIDevice, cpd, impl->pipeline));
     return impl;
 }
@@ -3389,13 +3410,7 @@ RfxAccelerationStructure rfxCreateAccelerationStructure(const RfxAccelerationStr
 
     if (isTLAS) {
         NRI_CHECK(CORE.NRI.CreateAccelerationStructureDescriptor(*impl->as, impl->descriptor));
-        nri::UpdateDescriptorRangeDesc update = {};
-        update.descriptorSet = CORE.Bindless.globalDescriptorSet;
-        update.rangeIndex = 5;
-        update.baseDescriptor = impl->bindlessIndex;
-        update.descriptorNum = 1;
-        update.descriptors = &impl->descriptor;
-        CORE.NRI.UpdateDescriptorRanges(&update, 1);
+        UpdateBindlessDescriptor(5, impl->bindlessIndex, impl->descriptor);
     }
 
     return impl;
@@ -4207,66 +4222,27 @@ rfxCreateTextureView(RfxTexture original, RfxFormat format, uint32_t mip, uint32
     impl->width = std::max(1u, original->width >> mip);
     impl->height = std::max(1u, original->height >> mip);
     impl->sampleCount = original->sampleCount;
+    impl->bindlessIndex = (uint32_t)-1;
 
+    RfxTextureUsageFlags usage = 0;
     // SRV
-    if (original->descriptor) {
-        impl->bindlessIndex = AllocTextureSlot();
-        nri::Texture2DViewDesc vd = {};
-        vd.texture = impl->texture;
-        vd.format = impl->format;
-        vd.viewType = nri::Texture2DViewType::SHADER_RESOURCE;
-        vd.mipOffset = (nri::Dim_t)mip;
-        vd.mipNum = (nri::Dim_t)mipCount;
-        vd.layerOffset = (nri::Dim_t)layer;
-        vd.layerNum = (nri::Dim_t)layerCount;
-        NRI_CHECK(CORE.NRI.CreateTexture2DView(vd, impl->descriptor));
-
-        nri::UpdateDescriptorRangeDesc update = {};
-        update.descriptorSet = CORE.Bindless.globalDescriptorSet;
-        update.rangeIndex = 0;
-        update.baseDescriptor = impl->bindlessIndex;
-        update.descriptorNum = 1;
-        update.descriptors = &impl->descriptor;
-        CORE.NRI.UpdateDescriptorRanges(&update, 1);
-    }
+    if (original->descriptor)
+        usage |= RFX_TEXTURE_USAGE_SHADER_RESOURCE;
 
     // RTV / DSV
     if (original->descriptorAttachment) {
-        nri::Texture2DViewDesc avd = {};
-        avd.texture = impl->texture;
-        avd.format = impl->format;
         bool isDepth = HasStencil(impl->format) || impl->format == nri::Format::D32_SFLOAT || impl->format == nri::Format::D16_UNORM;
-        avd.viewType = isDepth ? nri::Texture2DViewType::DEPTH_STENCIL_ATTACHMENT : nri::Texture2DViewType::COLOR_ATTACHMENT;
-        avd.mipOffset = (nri::Dim_t)mip;
-        avd.mipNum = (nri::Dim_t)mipCount;
-        avd.layerOffset = (nri::Dim_t)layer;
-        avd.layerNum = (nri::Dim_t)layerCount;
-        NRI_CHECK(CORE.NRI.CreateTexture2DView(avd, impl->descriptorAttachment));
+        if (isDepth)
+            usage |= RFX_TEXTURE_USAGE_DEPTH_STENCIL;
+        else
+            usage |= RFX_TEXTURE_USAGE_RENDER_TARGET;
     }
 
     // UAV
-    if (original->descriptorUAV) {
-        if (impl->bindlessIndex == 0)
-            impl->bindlessIndex = AllocTextureSlot();
+    if (original->descriptorUAV)
+        usage |= RFX_TEXTURE_USAGE_STORAGE;
 
-        nri::Texture2DViewDesc uav = {};
-        uav.texture = impl->texture;
-        uav.format = impl->format;
-        uav.viewType = nri::Texture2DViewType::SHADER_RESOURCE_STORAGE;
-        uav.mipOffset = (nri::Dim_t)mip;
-        uav.mipNum = (nri::Dim_t)mipCount;
-        uav.layerOffset = (nri::Dim_t)layer;
-        uav.layerNum = (nri::Dim_t)layerCount;
-        NRI_CHECK(CORE.NRI.CreateTexture2DView(uav, impl->descriptorUAV));
-
-        nri::UpdateDescriptorRangeDesc update = {};
-        update.descriptorSet = CORE.Bindless.globalDescriptorSet;
-        update.rangeIndex = 4; // uav
-        update.baseDescriptor = impl->bindlessIndex;
-        update.descriptorNum = 1;
-        update.descriptors = &impl->descriptorUAV;
-        CORE.NRI.UpdateDescriptorRanges(&update, 1);
-    }
+    CreateTextureDescriptors(impl, usage, mip, mipCount, layer, layerCount);
 
     return impl;
 }
@@ -4551,151 +4527,8 @@ static void BuildNRIPipeline(RfxPipelineImpl* impl) {
         const RfxPipelineDesc* desc = &cache.desc;
 
         nri::GraphicsPipelineDesc gpd = {};
-        gpd.pipelineLayout = impl->shader->pipelineLayout;
-        gpd.inputAssembly.topology = ToNRITopology(desc->topology);
-        gpd.inputAssembly.tessControlPointNum = (uint8_t)desc->patchControlPoints;
-
-        gpd.rasterization.fillMode = desc->wireframe ? nri::FillMode::WIREFRAME : nri::FillMode::SOLID;
-        gpd.rasterization.cullMode = (desc->cullMode == RFX_CULL_BACK)
-                                         ? nri::CullMode::BACK
-                                         : ((desc->cullMode == RFX_CULL_FRONT) ? nri::CullMode::FRONT : nri::CullMode::NONE);
-        gpd.rasterization.frontCounterClockwise = true;
-        gpd.rasterization.depthBias.constant = desc->depthBiasConstant;
-        gpd.rasterization.depthBias.clamp = desc->depthBiasClamp;
-        gpd.rasterization.depthBias.slope = desc->depthBiasSlope;
-        gpd.rasterization.shadingRate = desc->shadingRate;
-
-        uint8_t samples = (desc->sampleCount > 0) ? (uint8_t)desc->sampleCount : (uint8_t)CORE.SampleCount;
-        if (samples == 0)
-            samples = 1;
-
-        nri::MultisampleDesc ms = {};
-        ms.sampleNum = (nri::Sample_t)samples;
-        ms.sampleMask = nri::ALL;
-        gpd.multisample = &ms;
-
-        // colors
-        RfxVector<nri::ColorAttachmentDesc> colorDescs;
-        if (desc->attachmentCount > 0 && desc->attachments) {
-            colorDescs.resize(desc->attachmentCount);
-            for (uint32_t i = 0; i < desc->attachmentCount; ++i) {
-                nri::ColorAttachmentDesc& cad = colorDescs[i];
-                const RfxAttachmentDesc& src = desc->attachments[i];
-                cad.format = ToNRIFormat(src.format);
-
-                nri::ColorWriteBits mask = (nri::ColorWriteBits)src.blend.writeMask;
-                cad.colorWriteMask = (mask == nri::ColorWriteBits::NONE) ? nri::ColorWriteBits::RGBA : mask;
-
-                cad.blendEnabled = src.blend.blendEnabled;
-                cad.colorBlend.srcFactor = ToNRIBlendFactor(src.blend.srcColor);
-                cad.colorBlend.dstFactor = ToNRIBlendFactor(src.blend.dstColor);
-                cad.colorBlend.op = ToNRIBlendOp(src.blend.colorOp);
-                cad.alphaBlend.srcFactor = ToNRIBlendFactor(src.blend.srcAlpha);
-                cad.alphaBlend.dstFactor = ToNRIBlendFactor(src.blend.dstAlpha);
-                cad.alphaBlend.op = ToNRIBlendOp(src.blend.alphaOp);
-            }
-        } else if (desc->colorFormat != RFX_FORMAT_UNKNOWN) {
-            colorDescs.resize(1);
-            nri::ColorAttachmentDesc& cad = colorDescs[0];
-            cad.format = ToNRIFormat(desc->colorFormat);
-
-            nri::ColorWriteBits mask = (nri::ColorWriteBits)desc->blendState.writeMask;
-            cad.colorWriteMask = (mask == nri::ColorWriteBits::NONE) ? nri::ColorWriteBits::RGBA : mask;
-
-            cad.blendEnabled = desc->blendState.blendEnabled;
-            cad.colorBlend.srcFactor = ToNRIBlendFactor(desc->blendState.srcColor);
-            cad.colorBlend.dstFactor = ToNRIBlendFactor(desc->blendState.dstColor);
-            cad.colorBlend.op = ToNRIBlendOp(desc->blendState.colorOp);
-            cad.alphaBlend.srcFactor = ToNRIBlendFactor(desc->blendState.srcAlpha);
-            cad.alphaBlend.dstFactor = ToNRIBlendFactor(desc->blendState.dstAlpha);
-            cad.alphaBlend.op = ToNRIBlendOp(desc->blendState.alphaOp);
-        }
-
-        if (!colorDescs.empty()) {
-            gpd.outputMerger.colors = colorDescs.data();
-            gpd.outputMerger.colorNum = (uint32_t)colorDescs.size();
-        }
-
-        // depth stencil
-        if (desc->depthFormat != RFX_FORMAT_UNKNOWN) {
-            gpd.outputMerger.depthStencilFormat = ToNRIFormat(desc->depthFormat);
-            if (desc->depthCompareOp != 0) {
-                gpd.outputMerger.depth.compareOp = ToNRICompareOp(desc->depthCompareOp);
-            } else {
-                gpd.outputMerger.depth.compareOp = desc->depthTest ? nri::CompareOp::LESS : nri::CompareOp::NONE;
-            }
-            gpd.outputMerger.depth.write = desc->depthWrite;
-            gpd.outputMerger.depth.boundsTest = desc->depthBoundsTest;
-
-            if (desc->stencil.enabled) {
-                gpd.outputMerger.stencil.front.compareOp = ToNRICompareOp(desc->stencil.front.compareOp);
-                gpd.outputMerger.stencil.front.failOp = ToNRIStencilOp(desc->stencil.front.failOp);
-                gpd.outputMerger.stencil.front.passOp = ToNRIStencilOp(desc->stencil.front.passOp);
-                gpd.outputMerger.stencil.front.depthFailOp = ToNRIStencilOp(desc->stencil.front.depthFailOp);
-                gpd.outputMerger.stencil.front.compareMask = desc->stencil.readMask;
-                gpd.outputMerger.stencil.front.writeMask = desc->stencil.writeMask;
-
-                gpd.outputMerger.stencil.back.compareOp = ToNRICompareOp(desc->stencil.back.compareOp);
-                gpd.outputMerger.stencil.back.failOp = ToNRIStencilOp(desc->stencil.back.failOp);
-                gpd.outputMerger.stencil.back.passOp = ToNRIStencilOp(desc->stencil.back.passOp);
-                gpd.outputMerger.stencil.back.depthFailOp = ToNRIStencilOp(desc->stencil.back.depthFailOp);
-                gpd.outputMerger.stencil.back.compareMask = desc->stencil.readMask;
-                gpd.outputMerger.stencil.back.writeMask = desc->stencil.writeMask;
-            }
-        }
-
-        if (desc->viewMask != 0) {
-            gpd.outputMerger.viewMask = desc->viewMask;
-            gpd.outputMerger.multiview = nri::Multiview::FLEXIBLE;
-        }
-
-        // shaders
-        RfxVector<nri::ShaderDesc> sds;
-        bool explicitVertex = (desc->vsEntryPoint != nullptr);
-
-        for (auto& s : impl->shader->stages) {
-            if (s.stageBits & nri::StageBits::VERTEX_SHADER) {
-                if (desc->vsEntryPoint && s.sourceEntryPoint != desc->vsEntryPoint)
-                    continue;
-                sds.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
-            } else if (s.stageBits & nri::StageBits::FRAGMENT_SHADER) {
-                if (explicitVertex && desc->psEntryPoint == nullptr)
-                    continue;
-                if (desc->psEntryPoint && s.sourceEntryPoint != desc->psEntryPoint)
-                    continue;
-                sds.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
-            } else if (s.stageBits & nri::StageBits::GRAPHICS_SHADERS) {
-                sds.push_back({ s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() });
-            }
-        }
-
-        gpd.shaders = sds.data();
-        gpd.shaderNum = (uint32_t)sds.size();
-
-        // vertex input
-        nri::VertexInputDesc vid = {};
-        nri::VertexStreamDesc vs = { 0, nri::VertexStreamStepRate::PER_VERTEX };
-        RfxVector<nri::VertexAttributeDesc> vads;
-
-        bool hasVertexStage = (impl->shader->stageMask & nri::StageBits::VERTEX_SHADER);
-
-        if (desc->vertexLayout && hasVertexStage) {
-            for (int i = 0; i < desc->vertexLayoutCount; ++i) {
-                const auto& el = desc->vertexLayout[i];
-                nri::VertexAttributeDesc ad = {};
-                ad.d3d = { el.semanticName ? el.semanticName : "POSITION", 0 };
-                ad.vk = { el.location };
-                ad.offset = el.offset;
-                ad.format = ToNRIFormat(el.format);
-                ad.streamIndex = 0;
-                vads.push_back(ad);
-            }
-            vid.attributes = vads.data();
-            vid.attributeNum = (uint8_t)vads.size();
-            vid.streams = &vs;
-            vid.streamNum = 1;
-            gpd.vertexInput = &vid;
-        }
+        GraphicsPipelineContext ctx;
+        SetupGraphicsPipeline(impl, desc, gpd, ctx);
 
         NRI_CHECK(CORE.NRI.CreateGraphicsPipeline(*CORE.NRIDevice, gpd, impl->pipeline));
     } else if (impl->type == RfxPipelineImpl::COMPUTE) {
@@ -4703,16 +4536,7 @@ static void BuildNRIPipeline(RfxPipelineImpl* impl) {
         const RfxComputePipelineDesc* desc = &cache.desc;
 
         nri::ComputePipelineDesc cpd = {};
-        cpd.pipelineLayout = impl->shader->pipelineLayout;
-        for (auto& s : impl->shader->stages) {
-            if (s.stageBits & nri::StageBits::COMPUTE_SHADER) {
-                if (desc->entryPoint && s.sourceEntryPoint != desc->entryPoint)
-                    continue;
-
-                cpd.shader = { s.stageBits, s.bytecode.data(), s.bytecode.size(), s.entryPoint.c_str() };
-                break;
-            }
-        }
+        SetupComputePipeline(impl, desc, cpd);
         NRI_CHECK(CORE.NRI.CreateComputePipeline(*CORE.NRIDevice, cpd, impl->pipeline));
     } else if (impl->type == RfxPipelineImpl::RAY_TRACING) {
         const auto& cache = std::get<CachedRT>(impl->cache);
