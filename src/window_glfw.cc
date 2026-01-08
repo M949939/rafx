@@ -116,7 +116,7 @@ static void GlfwFreeWrapper(void* ptr, void* user) {
 
 // clang-format off
 #if (RAFX_PLATFORM == RAFX_WINDOWS)
-bool Win32_SystemIsDarkMode(void) {
+static bool Win32_SystemIsDarkMode(void) {
     uint32_t lightMode = 1;
     DWORD len = sizeof(lightMode);
 
